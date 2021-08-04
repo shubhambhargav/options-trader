@@ -1,0 +1,5 @@
+# Following is removed for legacy & sensitive data purposes
+config.json
+.tmp/
+.ipynb*
+__pycache__/
