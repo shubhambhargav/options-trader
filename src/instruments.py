@@ -70,7 +70,6 @@ def get_instrument_data(tickersymbol: str):
     )
 
     if response.status_code != 200:
-        print(VARIABLES.CONFIG['auth_token'])
         raise ValueError('Unexpected response code found: %d, response: %s' % (response.status_code, response.text))
         
     instrument_data = []
