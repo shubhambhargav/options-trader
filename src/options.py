@@ -4,8 +4,15 @@ from copy import deepcopy
 from datetime import datetime, timedelta
 
 import requests
-from ._variables import VARIABLES
-from . import utilities as Utilities
+
+try:
+    from ._variables import VARIABLES
+    from . import utilities as Utilities
+except:
+    # In order to run the module in isolation, following is required
+    # This enables local testing
+    from _variables import VARIABLES
+    import utilities as Utilities
 
 
 def _get_option_margin_span_scrip(option: dict):
@@ -256,3 +263,13 @@ def select_options(options: list, selection: str):
     print('Expected profit: %d, margin: %d' % (expected_info['profit'], expected_info['margin']))
 
     return selected_options
+
+
+def get_option_last_price(tickersymbol: str, underlying_instrument: str):
+    option_chain = get_full_option_chain(instrument_id=underlying_instrument)
+
+    for option in option_chain['data']:
+        if option['tradingsymbol'] == tickersymbol:
+            return option['last_price']
+
+    return None
