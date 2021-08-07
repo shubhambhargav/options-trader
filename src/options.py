@@ -10,7 +10,7 @@ from . import utilities as Utilities
 
 def _get_option_margin_span_scrip(option: dict):
     date_obj = datetime.strptime(option['expiry'], VARIABLES.DATETIME_FORMAT)
-    
+
     return '%(underlying_instrument)s%(day)s%(month_str)s' % {
         'underlying_instrument': option['underlying_instrument'],
         'day': '21',
@@ -42,10 +42,10 @@ def get_instrument_details(instrument_id: str):
         raise Exception('Invalid response code found: %s, expected: 200' % response.status_code)
 
     data = response.json()
-        
+
     for instrument_id, instrument_data in data.items():
         data[instrument_id] = json.loads(instrument_data)
-        
+
     return data
 
 
@@ -53,10 +53,10 @@ def get_full_option_chain(instrument_id: str):
     response = requests.get(
         'https://api.sensibull.com/v1/instruments/%s' % instrument_id
     )
-    
+
     if response.status_code != 200:
         raise Exception('Invalid response code found: %s, expected: 200' % response.status_code)
-    
+
     return response.json()
 
 
@@ -72,7 +72,7 @@ def get_option_margin(option: dict):
         ('qty[]', str(int(option['lot_size']) if option['lot_size'].is_integer() else option['lot_size'])),
         ('trade[]', 'sell'),
     ]
-    
+
     response = requests.post(
         'https://zerodha.com/margin-calculator/SPAN',
         headers={
@@ -80,42 +80,41 @@ def get_option_margin(option: dict):
         },
         data=data
     )
-    
+
     if response.status_code != 200:
         raise Exception('Invalid response code found: %s, expected: 200' % response.status_code)
-    
+
     return response.json()
 
 
 def get_instrument_options_of_interest(options: list, instrument: dict):
     instrument_price = instrument['last_price']
     selected_options = []
-    
+
     for option in options:
         if option['instrument_type'] != 'PE':  # only interested in PE options right now
             continue
-            
+
         if option['strike'] > instrument_price:  # only interested in valid PE i.e. less price than instrument_price
             continue
-            
+
         if get_time_to_expiry_in_days(option=option) > VARIABLES.MAX_TIME_TO_EXPIRY:  # only looking for options within next X numeber of days
             continue
 
         percentage_dip = (instrument_price - option['strike']) / instrument_price * 100
-            
+
         if VARIABLES.PE_OPTIONS_OF_INTEREST_THRESHOLD['min'] < percentage_dip < VARIABLES.PE_OPTIONS_OF_INTEREST_THRESHOLD['max']:
             option['percentage_dip'] = percentage_dip
 
             selected_options.append(option)
-            
-            
+
     return selected_options
 
 
 def add_margins(options: list):
     for option in options:
         option['margin_data'] = get_option_margin(option=option)['total']
-        
+
     return options
 
 
@@ -133,14 +132,14 @@ def add_profits(options: list):
             print(ex)
             print(option)
             raise ex
-        
+
     return options
 
 
 def add_instrument(instrument: dict, options: list):
     for option in options:
         option['instrument_data'] = instrument
-        
+
     return options
 
 
@@ -193,25 +192,25 @@ def filter_options(options: list):
     for option in options:
         if option['profit_data']['percentage'] <= VARIABLES.MINIMUM_PROFIT_PERCENTAGE:
             continue
-            
+
         filtered_options.append(option)
-    
+
     return filtered_options
 
 
 def get_options_of_interest(stocks: list):
     all_options = []
-    
+
     for option in stocks:
         instrument_details = get_instrument_details(instrument_id=option['ticker'])
         option_chain = get_full_option_chain(instrument_id=option['ticker'])
-        
+
         options_of_interest = get_instrument_options_of_interest(options=option_chain['data'], instrument=instrument_details[option['ticker']])
-        
+
         options_of_interest = add_margins(options=options_of_interest)
         options_of_interest = add_profits(options=options_of_interest)
         options_of_interest = add_instrument(instrument=instrument_details[option['ticker']], options=options_of_interest)
-        
+
         all_options += options_of_interest
 
     options = sort_options(options=all_options)
