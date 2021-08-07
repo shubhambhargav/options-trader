@@ -2,7 +2,7 @@ import requests
 
 from ._variables import VARIABLES
 from . import utilities as Utilities
-from . import instruments
+from . import options
 
 
 def place_order(option: dict):

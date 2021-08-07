@@ -2,22 +2,12 @@ from datetime import datetime, timedelta
 
 import requests
 import pandas as pd
-from nsetools import Nse
 
 from . import utilities as Utilities
 from ._variables import VARIABLES
 from . import technical_indicators
 
-nse = Nse()
 INSTRUMENT_TOKEN_DICT = {}
-
-
-def get_quote(tickersymbol: str):
-    return nse.get_quote(tickersymbol)
-
-
-def get_last_price(tickersymbol: str):
-    return get_quote(tickersymbol=tickersymbol)['lastPrice']
 
 
 def get_instrument_token_dict():
