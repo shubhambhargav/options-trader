@@ -8,21 +8,18 @@ from . import options
 def place_order(option: dict):
     # Since the price of the option can change during the analysis,
     # following code ensures that we don't trade at a lower value than the last price
-    # TODO: Find the tool which can get the price for options
-    # nsetools wasn't able to do so
-    # option_last_price = instruments.get_last_price(tickersymbol=option['tradingsymbol'])
-    # expected_trade_price = option['last_price']
-
-    # if option_last_price > expected_trade_price:
-    #     print(
-    #         'Increasing the trade price for %s. Previous price: %s, new price: %s' % (
-    #             option['tradingsymbol'], expected_trade_price, option_last_price
-    #         )
-    #     )
-    #     print('New expected profit: %s' % (expected_trade_price * int(option['lot_size'])))
-
-    #     expected_trade_price = option_last_price
+    option_last_price = options.get_option_last_price(tradingsymbol=option['tradingsymbol'], underlying_instrument=option['underlying_instrument'])
     expected_trade_price = option['last_price']
+
+    if option_last_price > expected_trade_price:
+        print(
+            'Increasing the trade price for %s. Previous price: %s, new price: %s' % (
+                option['tradingsymbol'], expected_trade_price, option_last_price
+            )
+        )
+        print('New expected profit: %s' % (expected_trade_price * int(option['lot_size'])))
+
+        expected_trade_price = option_last_price
 
     data = {
       'variety': 'regular',

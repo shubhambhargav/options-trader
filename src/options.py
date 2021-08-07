@@ -265,11 +265,11 @@ def select_options(options: list, selection: str):
     return selected_options
 
 
-def get_option_last_price(tickersymbol: str, underlying_instrument: str):
+def get_option_last_price(tradingsymbol: str, underlying_instrument: str):
     option_chain = get_full_option_chain(instrument_id=underlying_instrument)
 
     for option in option_chain['data']:
-        if option['tradingsymbol'] == tickersymbol:
+        if option['tradingsymbol'] == tradingsymbol:
             return option['last_price']
 
     return None
