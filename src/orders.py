@@ -1,6 +1,6 @@
 import requests
 
-from . import _variables as VARIABLES
+from ._variables import VARIABLES
 from . import utilities as Utilities
 from . import instruments
 

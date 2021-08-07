@@ -5,7 +5,7 @@ import pandas as pd
 from nsetools import Nse
 
 from . import utilities as Utilities
-from . import _variables as VARIABLES
+from ._variables import VARIABLES
 from . import technical_indicators
 
 nse = Nse()

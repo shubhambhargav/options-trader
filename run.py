@@ -5,6 +5,7 @@ from datetime import datetime, timedelta
 import requests
 
 import runtime_variables as VARIABLES
+from src import _variables as LibVariables
 from src.options import get_options_of_interest_df, print_trading_details, select_options
 from src.orders import place_order
 from src.chrome import get_cookie_dict
@@ -21,6 +22,10 @@ def _refresh_config():
 
     with open(config_loc, 'w+') as fileop:
         fileop.write(json.dumps(config, indent=4))
+
+    # Following reload is required to ensure that the new auth token is reloaded
+    # to the underlying library as well
+    LibVariables.reload()
 
 
 def _get_indicators():

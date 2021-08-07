@@ -4,7 +4,7 @@ from copy import deepcopy
 from datetime import datetime, timedelta
 
 import requests
-from . import _variables as VARIABLES
+from ._variables import VARIABLES
 from . import utilities as Utilities
 
 
