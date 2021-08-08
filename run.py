@@ -57,6 +57,7 @@ def run():
         how='outer',
         on='underlying_instrument'
     )
+    options_of_interest_df['sequence_id'] = options_of_interest_df['sequence_id'].fillna(-100).astype(int)
 
     options_of_interest_df.rename(
         columns={

@@ -8,7 +8,7 @@ from . import options
 def place_order(option: dict):
     # Since the price of the option can change during the analysis,
     # following code ensures that we don't trade at a lower value than the last price
-    option_last_price = options.get_option_last_price(tradingsymbol=option['tradingsymbol'], underlying_instrument=option['underlying_instrument'])
+    option_last_price = options.get_option_last_price(tradingsymbol=option['tradingsymbol'], underlying_instrument=option['instrument'])
     expected_trade_price = option['last_price']
 
     if option_last_price > expected_trade_price:
