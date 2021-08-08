@@ -98,9 +98,11 @@ def get_enriched_instruments_df(insturments_of_interest: list):
 
     last_buy_signal_df = final_df[(final_df['buy_signal'] == 2) & (final_df['timestamp'] >= (datetime.now() - timedelta(days=30)).strftime(VARIABLES.DATETIME_FORMAT))] \
         .groupby('tickersymbol') \
-        .agg({
-            'timestamp': ['max']
-        })
+        .agg(last_buy_signal=('timestamp', 'max'))
+
+    # Following ensures that day datetime string representation has limited information for sanity
+    last_buy_signal_df['last_buy_signal'] = last_buy_signal_df['last_buy_signal'].replace('T00:00:00', '', regex=True)
+    last_buy_signal_df['last_buy_signal'] = last_buy_signal_df['last_buy_signal'].replace('\+0530', '', regex=True)
 
     agg_df = final_df.groupby('tickersymbol').agg({
         'close': ['min', 'mean', 'last'],

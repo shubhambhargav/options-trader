@@ -10,6 +10,7 @@ from src.options import get_options_of_interest_df, print_trading_details, selec
 from src.orders import place_order
 from src.chrome import get_cookie_dict
 from src.instruments import get_enriched_instruments_df
+from src.technical_indicators import add_recommendations
 
 
 def _refresh_config():
@@ -42,12 +43,13 @@ def run():
 
         return
 
-    print(options_of_interest_df[[
-        'sequence_id', 'underlying_instrument', 'instrument_data__close_price',
-        'last_price', 'percentage_dip',
-        'profit_data__value', 'profit_data__percentage', 'margin_data__total'
-    ]])
-    print('-----------------------------------------------')
+    # TODO: Remove the following code. It has been commented since the access issue bug was resolved
+    # print(options_of_interest_df[[
+    #     'sequence_id', 'underlying_instrument', 'instrument_data__close_price',
+    #     'last_price', 'percentage_dip',
+    #     'profit_data__value', 'profit_data__percentage', 'margin_data__total'
+    # ]])
+    # print('-----------------------------------------------')
 
     indicators_df = _get_indicators()
     options_of_interest_df = options_of_interest_df.join(
@@ -66,16 +68,17 @@ def run():
             'profit_data__percentage': '%_profit',
             'margin_data__total': 'margin',
             ('close_last_by_min', ''): 'close_last_by_min',
-            ('close_last_by_avg', ''): 'close_last_by_avg',
-            ('timestamp', 'max'): 'last_buy_signal'
+            ('close_last_by_avg', ''): 'close_last_by_avg'
         },
         inplace=True
     )
 
+    options_of_interest_df = add_recommendations(option_df=options_of_interest_df)
+
     indexed_options = options_of_interest_df.set_index(['instrument', 'instrument_price', 'expiry', 'close_last_by_min', 'close_last_by_avg', 'last_buy_signal'])
 
     columns = [
-        'seq', '%_dip', 'profit', '%_profit', 'strike', 'last_price', 'margin', 'backup_money'
+        'seq', 'recommendation', '%_dip', 'profit', '%_profit', 'strike', 'last_price', 'margin', 'backup_money'
     ]
 
     print(indexed_options[columns])
