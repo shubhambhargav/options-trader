@@ -54,8 +54,6 @@ def add_recommendations(option_df):
         'recommendation'
     ] = ':white_check_mark:'
 
-    print(option_df)
-
     option_df['recommendation'] = option_df['recommendation'].apply(lambda x: emoji.emojize(x, use_aliases=True))
 
     return option_df

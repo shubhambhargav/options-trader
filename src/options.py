@@ -2,6 +2,7 @@ import json
 import pandas as pd
 from copy import deepcopy
 from datetime import datetime, timedelta
+from multiprocessing import Pool
 
 import requests
 
@@ -69,6 +70,7 @@ def get_full_option_chain(instrument_id: str):
 
 def get_option_margin(option: dict):
     # Note: Hard-coded for options and SELL type for now
+    # TODO: Possibly change to leverage BUY as well
     data = [
         ('action', 'calculate'),
         ('exchange[]', 'NFO'),
@@ -92,6 +94,67 @@ def get_option_margin(option: dict):
         raise Exception('Invalid response code found: %s, expected: 200' % response.status_code)
 
     return response.json()
+
+
+def get_option_margin_v2(option: dict):
+    # Note: Hard-coded for options and SELL type for now
+    # TODO: Possibly change to leverage BUY as well
+    data = [{
+        'exchange': 'NFO',
+        'tradingsymbol': option['tradingsymbol'],
+        'transaction_type': 'SELL',
+        'product': 'NRML',
+        'variety': 'regular',
+        'order_type': 'limit',
+        'quantity': int(option['lot_size']) if option['lot_size'].is_integer() else option['lot_size'],
+        'price': option['last_price']
+    }]
+
+    response = requests.post(
+        'https://kite.zerodha.com/oms/margins/orders',
+        headers={
+            'Content-Type': 'application/json',
+            'Authorization': f"enctoken {VARIABLES.CONFIG['auth_token']}"
+        },
+        data=json.dumps(data)
+    )
+
+    if response.status_code != 200:
+        raise Exception('Invalid response code found: %s, expected: 200' % response.status_code)
+
+    return response.json()['data'][0]
+
+
+def get_option_margin_bulk(options: dict):
+    # Note: Hard-coded for options and SELL type for now
+    # TODO: Possibly change to leverage BUY as well
+    data = []
+
+    for option in options:
+        data.append({
+            'exchange': 'NFO',
+            'tradingsymbol': option['tradingsymbol'],
+            'transaction_type': 'SELL',
+            'product': 'NRML',
+            'variety': 'regular',
+            'order_type': 'limit',
+            'quantity': int(option['lot_size']) if option['lot_size'].is_integer() else option['lot_size'],
+            'price': option['last_price']
+        })
+
+    response = requests.post(
+        'https://kite.zerodha.com/oms/margins/orders',
+        headers={
+            'Content-Type': 'application/json',
+            'Authorization': f"enctoken {VARIABLES.CONFIG['auth_token']}"
+        },
+        data=json.dumps(data)
+    )
+
+    if response.status_code != 200:
+        raise Exception('Invalid response code found: %s, expected: 200' % response.status_code)
+
+    return response.json()['data']
 
 
 def get_instrument_options_of_interest(options: list, instrument: dict):
@@ -119,10 +182,25 @@ def get_instrument_options_of_interest(options: list, instrument: dict):
 
 
 def add_margins(options: list):
-    for option in options:
-        option['margin_data'] = get_option_margin(option=option)['total']
+    margin_data = get_option_margin_bulk(options=options)
+
+    for iteration, option in enumerate(options):
+        option['margin_data'] = margin_data[iteration]
 
     return options
+
+    # V2 API
+    # The following API is more correct but disabled in lieu of performance
+    # for option in options:
+    #     option['margin_data'] = get_option_margin_v2(option=option)
+
+    # return options
+
+    # V1 API
+    # for option in options:
+    #     option['margin_data'] = get_option_margin(option=option)['total']
+
+    # return options
 
 
 def add_profits(options: list):
