@@ -82,7 +82,7 @@ def run():
         'seq', 'recommendation', '%_dip', 'profit', '%_profit', 'strike', 'last_price', 'margin', 'backup_money'
     ]
 
-    print(indexed_options[columns])
+    print(indexed_options[columns].to_string())
 
     selection = input('Select the options to trade: ')
     selected_options = select_options(options=options_of_interest_df.T.to_dict().values(), selection=selection)
