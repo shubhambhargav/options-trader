@@ -11,6 +11,7 @@ from src.orders import place_order
 from src.chrome import get_cookie_dict
 from src.instruments import get_enriched_instruments_df
 from src.technical_indicators import add_recommendations
+from src.positions import add_positions
 
 
 def _refresh_config():
@@ -58,6 +59,7 @@ def run():
         on='underlying_instrument'
     )
     options_of_interest_df['sequence_id'] = options_of_interest_df['sequence_id'].fillna(-100).astype(int)
+    options_of_interest_df = add_positions(options_df=options_of_interest_df)
 
     options_of_interest_df.rename(
         columns={
@@ -79,7 +81,7 @@ def run():
     indexed_options = options_of_interest_df.set_index(['instrument', 'instrument_price', 'expiry', 'close_last_by_min', 'close_last_by_avg', 'last_buy_signal'])
 
     columns = [
-        'seq', 'recommendation', '%_dip', 'profit', '%_profit', 'strike', 'last_price', 'margin', 'backup_money'
+        'seq', 'recommendation', 'existing', '%_dip', 'profit', '%_profit', 'strike', 'last_price', 'margin', 'backup_money'
     ]
 
     print(indexed_options[columns].to_string())
