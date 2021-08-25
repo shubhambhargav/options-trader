@@ -1,6 +1,9 @@
 import collections
+import re
 
 import pandas as pd
+
+TRADINGSYMBOL_META = re.compile('(?P<instrument>[A-Z]+)(?P<datetime>[A-Z0-9]{5})(?P<type>[A-Z0-9]+)')
 
 
 def round_nearest(number: float, unit: float):
@@ -54,3 +57,19 @@ def dict_array_to_df(dict_array: list):
         resp_data.append(flatten_dict(data=dict_value))
 
     return resp_data
+
+
+
+def tradingsymbol_to_meta(tradingsymbol: str):
+    metadata = TRADINGSYMBOL_META.match(tradingsymbol)
+
+    if not metadata:
+        raise ValueError('Could not retrieve metadata for %s' % tradingsymbol)
+
+    metadata_dict = metadata.groupdict()
+
+    if 'PE' in metadata_dict['type']:
+        metadata_dict['option_price'] = float(metadata_dict['type'].replace('PE', ''))
+        metadata_dict['type'] = 'OPT'
+
+    return metadata_dict

@@ -1,5 +1,6 @@
 import json
 import pandas as pd
+from collections import defaultdict
 from copy import deepcopy
 from datetime import datetime, timedelta
 import requests
@@ -11,7 +12,9 @@ from src.orders import place_order
 from src.chrome import get_cookie_dict
 from src.instruments import get_enriched_instruments_df
 from src.technical_indicators import add_recommendations
-from src.positions import add_positions
+from src.positions import add_positions, get_positions
+from src.utilities import tradingsymbol_to_meta
+from src.futures import place_gtt_for_option
 
 
 def _refresh_config():
@@ -34,8 +37,38 @@ def _get_indicators():
     return get_enriched_instruments_df(insturments_of_interest=VARIABLES.OPTIONS_OF_INTEREST)
 
 
+def _get_future_option_diff(positions: list):
+    diff_array = []
+
+    for position in sorted(positions, key=lambda x: x['tradingsymbol']):
+        if position['tradingsymbol'].endswith('PE'):
+            diff_array.append(position)
+
+        if position['tradingsymbol'].endswith('FUT'):
+            diff_array.pop(-1)
+
+    for opt in diff_array:
+        opt.update(tradingsymbol_to_meta(tradingsymbol=opt['tradingsymbol']))
+
+    return diff_array
+
+
+def _set_future_gtts():
+    positions = get_positions()
+
+    uncovered_options = _get_future_option_diff(positions=positions['net'])
+
+    for option in uncovered_options:
+        # TODO: Add the check to see if GTT already exists in the GTT list
+        place_gtt_for_option(option=option)
+
+        break
+
+
 def run():
     _refresh_config()
+    _set_future_gtts()
+    return
 
     options_of_interest_df = get_options_of_interest_df(stocks=VARIABLES.OPTIONS_OF_INTEREST)
 
