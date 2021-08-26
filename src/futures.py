@@ -30,7 +30,7 @@ def place_gtt_for_option(option: dict):
             'transaction_type': 'SELL',
             # TODO: Following assumes the option to always be in the SELL mode. This needs
             #       to change for BUY mode.
-            'quantity': int(-1 * option['overnight_quantity']),
+            'quantity': int(-1 * option['quantity']),
             'price': option['option_price'],
             'order_type': 'LIMIT',
             'product': 'NRML'

@@ -77,8 +77,6 @@ def _set_future_gtts():
 
         place_gtt_for_option(option=option)
 
-        break
-
 
 def run():
     _refresh_config()
