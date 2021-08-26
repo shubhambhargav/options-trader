@@ -1,6 +1,6 @@
 import json
 import requests
-from datetime import datetime
+from datetime import datetime, timedelta
 
 from ._variables import VARIABLES
 from . import utilities as Utilities
@@ -11,6 +11,8 @@ def place_gtt_for_option(option: dict):
         'instrument': option['instrument'],
         'datetime': option['datetime']
     }
+
+    expiry = Utilities.get_last_thursday_for_derivative(datetime_str=option['datetime'])
 
     data = {
         'condition': json.dumps({
@@ -34,8 +36,7 @@ def place_gtt_for_option(option: dict):
             'product': 'NRML'
         }]),
         'type': 'single',
-        # TODO: Update the following to be the date when the option expires
-        'expires_at': '2022-08-25 00:00:00'
+        'expires_at': (expiry + timedelta(days=1)).strftime('%Y-%m-%d %H:%M:%S')
     }
 
     headers = {

@@ -15,6 +15,7 @@ from src.technical_indicators import add_recommendations
 from src.positions import add_positions, get_positions
 from src.utilities import tradingsymbol_to_meta
 from src.futures import place_gtt_for_option
+from src.gtt import get_gtt
 
 
 def _refresh_config():
@@ -55,11 +56,25 @@ def _get_future_option_diff(positions: list):
 
 def _set_future_gtts():
     positions = get_positions()
+    gtts = get_gtt()
+
+    gtt_tradingsymbol = set([elem['condition']['tradingsymbol'] for elem in gtts])
 
     uncovered_options = _get_future_option_diff(positions=positions['net'])
 
     for option in uncovered_options:
-        # TODO: Add the check to see if GTT already exists in the GTT list
+        # TODO: Remove / increase the stoploss for the options
+        # TODO: Convert the following in a utility function
+        tradingsymbol = '%(instrument)s%(datetime)sFUT' % {
+            'instrument': option['instrument'],
+            'datetime': option['datetime']
+        }
+
+        if tradingsymbol in gtt_tradingsymbol:
+            print('Found existing future for: %s, skipping...' % tradingsymbol)
+
+            continue
+
         place_gtt_for_option(option=option)
 
         break
@@ -68,7 +83,6 @@ def _set_future_gtts():
 def run():
     _refresh_config()
     _set_future_gtts()
-    return
 
     options_of_interest_df = get_options_of_interest_df(stocks=VARIABLES.OPTIONS_OF_INTEREST)
 

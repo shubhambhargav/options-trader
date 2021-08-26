@@ -1,5 +1,7 @@
 import collections
 import re
+from datetime import datetime
+from dateutil.relativedelta import relativedelta, TH
 
 import pandas as pd
 
@@ -73,3 +75,28 @@ def tradingsymbol_to_meta(tradingsymbol: str):
         metadata_dict['type'] = 'OPT'
 
     return metadata_dict
+
+
+
+def get_last_thursday_for_derivative(datetime_str: str):
+    datetime_obj = datetime.strptime(datetime_str, '%d%b')
+    today = datetime.today()
+    current_year = today.year
+    # Year is determined based on the derivative expiry
+    # since Jan, Feb would be in the next year, year + 1 is used
+    datetime_obj = datetime(
+        year=current_year + 1 if datetime_obj.month in [1, 2] else current_year,
+        month=datetime_obj.month,
+        day=datetime_obj.day
+    )
+
+    for i in range(1, 6):
+        t = datetime_obj + relativedelta(weekday=TH(i))
+
+        if t.month != datetime_obj.month:
+            # Since t is exceeded we need last one  which we can get by subtracting -2 since it is already a Thursday.
+            t = t + relativedelta(weekday=TH(-2))
+
+            break
+
+    return t
