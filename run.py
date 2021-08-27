@@ -78,7 +78,21 @@ def _set_future_gtts():
         place_gtt_for_option(option=option)
 
 
+def _get_total_profit_month_end():
+    positions = get_positions()
+    total_profit = 0
+
+    for position in positions['net']:
+        total_profit += (-1 * position['quantity'] * position['average_price'])
+
+    return total_profit
+
+
 def run():
+    total_profit = _get_total_profit_month_end()
+
+    print('Total profit expected till now: %d' % total_profit)
+
     _refresh_config()
     _set_future_gtts()
 
