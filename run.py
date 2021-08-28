@@ -7,7 +7,7 @@ import requests
 
 import runtime_variables as VARIABLES
 from src import _variables as LibVariables
-from src.options import get_options_of_interest_df, print_trading_details, select_options
+from src.options import get_options_of_interest_df, select_options
 from src.orders import place_order
 from src.chrome import get_cookie_dict
 from src.instruments import get_enriched_instruments_df
@@ -110,7 +110,7 @@ def run():
         how='outer',
         on='underlying_instrument'
     )
-    options_of_interest_df['sequence_id'] = options_of_interest_df['sequence_id'].fillna(-100).astype(int)
+    options_of_interest_df.sequence_id = options_of_interest_df.sequence_id.fillna(-100).astype(int)
     options_of_interest_df = add_positions(options_df=options_of_interest_df)
 
     options_of_interest_df.rename(

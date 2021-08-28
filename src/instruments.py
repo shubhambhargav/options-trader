@@ -1,3 +1,4 @@
+import json
 from datetime import datetime, timedelta
 
 import requests
@@ -6,6 +7,7 @@ import pandas as pd
 from . import utilities as Utilities
 from ._variables import VARIABLES
 from . import technical_indicators
+from . import models
 
 INSTRUMENT_TOKEN_DICT = {}
 
@@ -61,25 +63,49 @@ def get_instrument_data(tickersymbol: str):
 
     if response.status_code != 200:
         raise ValueError('Unexpected response code found: %d, response: %s' % (response.status_code, response.text))
-        
+
     instrument_data = []
-        
+
     for row in response.json()['data']['candles']:
         instrument_data.append(dict(zip(response_headers, row)))
-        
+
     return instrument_data
+
+
+
+def get_instrument_details(instrument_id: str) -> models.Instrument:
+    """Legacy function from options module"""
+    # TODO: Possibly retire this function
+    response = requests.post(
+        'https://api.sensibull.com/v1/instrument_details',
+        headers={
+            'Content-Type': 'application/json'
+        },
+        data=json.dumps({
+            'underlyings': [instrument_id]
+        })
+    )
+
+    if response.status_code != 200:
+        raise Exception('Invalid response code found: %s, expected: 200' % response.status_code)
+
+    data = response.json()
+
+    # Response contains instrument ID as a key, hence to maintain the sanity of the function
+    # the response enusures that we are only sending the respective instrument details
+    return json.loads(list(data.values())[0])
 
 
 def _get_enriched_instrument_df(tickersymbol: str):
     instrument_data = get_instrument_data(tickersymbol=tickersymbol)
     
     instrument_df = pd.DataFrame.from_dict(data=instrument_data)
-    
+
     instrument_df['tickersymbol'] = tickersymbol
 
     instrument_df = technical_indicators.add_indicators(instrument_df=instrument_df)
     instrument_df = technical_indicators.add_buying_signal(instrument_df=instrument_df)
-    
+
     return instrument_df
 
 
