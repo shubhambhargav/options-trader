@@ -1,4 +1,6 @@
 import emoji
+import numpy as np
+import pandas as pd
 
 
 def add_indicators(instrument_df):
@@ -45,15 +47,21 @@ def add_buying_signal(instrument_df):
 
 
 def add_recommendations(option_df):
-    option_df['recommendation'] = 'NA'
+    recommendations = option_df[
+        (option_df['close_last_by_avg'] < 5) &
+            (option_df['close_last_by_avg'] > -10) &
+            (option_df['%_dip'] >= 8)
+    ].groupby('instrument').first()
+    recommendations['recommendation'] = ':white_check_mark:'
 
-    option_df.loc[
-        option_df['close_last_by_avg'].lt(5) &
-            option_df['close_last_by_avg'].gt(-10) &
-            option_df['%_dip'].ge(8),
-        'recommendation'
-    ] = ':white_check_mark:'
-
-    option_df['recommendation'] = option_df['recommendation'].apply(lambda x: emoji.emojize(x, use_aliases=True))
+    option_df = pd.merge(
+        option_df.set_index(['margin_data__tradingsymbol', 'strike']),
+        recommendations[['margin_data__tradingsymbol', 'strike', 'recommendation']],
+        how='left',
+        on=['margin_data__tradingsymbol', 'strike']
+    )
+    option_df['recommendation'] = option_df['recommendation'] \
+        .replace(np.nan, 'NA') \
+        .apply(lambda x: emoji.emojize(x, use_aliases=True))
 
     return option_df

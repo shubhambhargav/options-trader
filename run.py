@@ -89,11 +89,12 @@ def _get_total_profit_month_end():
 
 
 def run():
+    _refresh_config()
+
     total_profit = _get_total_profit_month_end()
 
     print('Total profit expected till now: %d' % total_profit)
 
-    _refresh_config()
     _set_future_gtts()
 
     options_of_interest_df = get_options_of_interest_df(stocks=VARIABLES.OPTIONS_OF_INTEREST)
@@ -145,11 +146,11 @@ def run():
 
     print(indexed_options[columns].to_string())
 
-    selection = input('Select the options to trade: ')
-    selected_options = select_options(options=options_of_interest_df.T.to_dict().values(), selection=selection)
+    # selection = input('Select the options to trade: ')
+    # selected_options = select_options(options=options_of_interest_df.T.to_dict().values(), selection=selection)
 
-    for option in selected_options:
-        place_order(option=option)
+    # for option in selected_options:
+    #     place_order(option=option)
 
 
 if __name__ == '__main__':
