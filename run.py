@@ -104,14 +104,6 @@ def run():
 
         return
 
-    # TODO: Remove the following code. It has been commented since the access issue bug was resolved
-    # print(options_of_interest_df[[
-    #     'sequence_id', 'underlying_instrument', 'instrument_data__close_price',
-    #     'last_price', 'percentage_dip',
-    #     'profit_data__value', 'profit_data__percentage', 'margin_data__total'
-    # ]])
-    # print('-----------------------------------------------')
-
     indicators_df = _get_indicators()
     options_of_interest_df = options_of_interest_df.join(
         indicators_df,
@@ -146,11 +138,11 @@ def run():
 
     print(indexed_options[columns].to_string())
 
-    # selection = input('Select the options to trade: ')
-    # selected_options = select_options(options=options_of_interest_df.T.to_dict().values(), selection=selection)
+    selection = input('Select the options to trade: ')
+    selected_options = select_options(options=options_of_interest_df.T.to_dict().values(), selection=selection)
 
-    # for option in selected_options:
-    #     place_order(option=option)
+    for option in selected_options:
+        place_order(option=option)
 
 
 if __name__ == '__main__':
