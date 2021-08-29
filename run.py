@@ -119,9 +119,9 @@ def run():
             'underlying_instrument': 'instrument',
             'instrument_data__close_price': 'instrument_price',
             'percentage_dip': '%_dip',
-            'profit_data__value': 'profit',
-            'profit_data__percentage': '%_profit',
-            'margin_data__total': 'margin',
+            'profit__value': 'profit',
+            'profit__percentage': '%_profit',
+            'margin__total': 'margin',
             ('close_last_by_min', ''): 'close_last_by_min',
             ('close_last_by_avg', ''): 'close_last_by_avg'
         },
@@ -138,11 +138,11 @@ def run():
 
     print(indexed_options[columns].to_string())
 
-    selection = input('Select the options to trade: ')
-    selected_options = select_options(options=options_of_interest_df.T.to_dict().values(), selection=selection)
+    # selection = input('Select the options to trade: ')
+    # selected_options = select_options(options=options_of_interest_df.T.to_dict().values(), selection=selection)
 
-    for option in selected_options:
-        place_order(option=option)
+    # for option in selected_options:
+    #     place_order(option=option)
 
 
 if __name__ == '__main__':

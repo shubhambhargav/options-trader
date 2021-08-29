@@ -55,10 +55,10 @@ def add_recommendations(option_df):
     recommendations['recommendation'] = ':white_check_mark:'
 
     option_df = pd.merge(
-        option_df.set_index(['margin_data__tradingsymbol', 'strike']),
-        recommendations[['margin_data__tradingsymbol', 'strike', 'recommendation']],
+        option_df.set_index(['margin__tradingsymbol', 'strike']),
+        recommendations[['margin__tradingsymbol', 'strike', 'recommendation']],
         how='left',
-        on=['margin_data__tradingsymbol', 'strike']
+        on=['margin__tradingsymbol', 'strike']
     )
     option_df['recommendation'] = option_df['recommendation'] \
         .replace(np.nan, 'NA') \

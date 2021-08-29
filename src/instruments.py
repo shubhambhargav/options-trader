@@ -93,7 +93,13 @@ def get_instrument_details(instrument_id: str) -> models.Instrument:
 
     # Response contains instrument ID as a key, hence to maintain the sanity of the function
     # the response enusures that we are only sending the respective instrument details
-    return json.loads(list(data.values())[0])
+    instrument = json.loads(list(data.values())[0])
+
+    # Following is being done to account for @dataclass compatibility
+    # with class attributes only starting with non-digit characters
+    instrument.pop('200DMA_volume', None)
+
+    return instrument
 
 
 def _get_enriched_instrument_df(tickersymbol: str):

@@ -26,7 +26,7 @@ def get_time_to_expiry_in_days(option: dict):
     return (expiry - today).days
 
 
-def get_full_option_chain(instrument_id: str):
+def _get_full_option_chain(instrument_id: str):
     response = requests.get(
         'https://api.sensibull.com/v1/instruments/%s' % instrument_id
     )
@@ -34,10 +34,10 @@ def get_full_option_chain(instrument_id: str):
     if response.status_code != 200:
         raise Exception('Invalid response code found: %s, expected: 200' % response.status_code)
 
-    return response.json()
+    return response.json()['data']
 
 
-def get_option_margin_bulk(options: dict):
+def _get_option_margin_bulk(options: dict) -> List[models.OptionMargin]:
     # Note: Hard-coded for options and SELL type for now
     # TODO: Possibly change to leverage BUY as well
     data = []
@@ -93,40 +93,6 @@ def get_instrument_options_of_interest(options: list, instrument: dict):
     return selected_options
 
 
-def add_margins(options: list):
-    margin_data = get_option_margin_bulk(options=options)
-
-    for iteration, option in enumerate(options):
-        option['margin_data'] = margin_data[iteration]
-
-    return options
-
-
-def add_profits(options: list):
-    for option in options:
-        try:
-            base = option['margin_data']['total']
-            profit = option['last_price'] * option['lot_size']
-
-            option['profit_data'] = {
-                'value': profit,
-                'percentage': profit / base * 100
-            }
-        except Exception as ex:
-            print(ex)
-            print(option)
-            raise ex
-
-    return options
-
-
-def add_instrument(instrument: dict, options: list):
-    for option in options:
-        option['instrument_data'] = instrument
-
-    return options
-
-
 def get_margin():
     response = requests.get(
         'https://kite.zerodha.com/oms/user/margins',
@@ -142,20 +108,38 @@ def get_margin():
     return response.json()['data']['equity']['net']
 
 
-def sort_options(options: list):
-    return sorted(options, key=lambda x: x['profit_data']['percentage'] + x['percentage_dip'], reverse=True)
+def _enrich_options(options: List[models.Option]):
+    enriched_options = []
+    margin_data = _get_option_margin_bulk(options=options)
+
+    # Following is used to avoid multiple calls to the underlying
+    # instrument API
+    instrument_data_cache = {}
+
+    for iteration, option in enumerate(options):
+        option = models.ProcessedOption(**option)
+
+        option.backup_money = option.strike * option.lot_size
+        option.margin = models.OptionMargin(**margin_data[iteration])
+
+        if option.underlying_instrument in instrument_data_cache:
+            option.instrument_data = instrument_data_cache[option.underlying_instrument]
+        else:
+            instrument_data = get_instrument_details(instrument_id=option.underlying_instrument)
+            option.instrument_data = models.Instrument(**instrument_data)
+
+            instrument_data_cache[option.underlying_instrument] = instrument_data
 
 
-def filter_options(options: list):
-    filtered_options = []
+        profit = option.last_price * option.lot_size
+        option.profit = models.OptionProfit(**{
+            'value': profit,
+            'percentage': (profit / option.margin.total) * 100
+        })
 
-    for option in options:
-        if option['profit_data']['percentage'] <= VARIABLES.MINIMUM_PROFIT_PERCENTAGE:
-            continue
+        enriched_options.append(option)
 
-        filtered_options.append(option)
-
-    return filtered_options
+    return enriched_options
 
 
 def get_options_of_interest(stocks: List[models.StockOfInterest]):
@@ -164,42 +148,45 @@ def get_options_of_interest(stocks: List[models.StockOfInterest]):
     for stock in stocks:
         stock = models.StockOfInterest(**stock)
         instrument = get_instrument_details(instrument_id=stock.ticker)
-        option_chain = get_full_option_chain(instrument_id=stock.ticker)
+        options = _get_full_option_chain(instrument_id=stock.ticker)
 
-        options_of_interest = get_instrument_options_of_interest(options=option_chain['data'], instrument=instrument)
-
-        options_of_interest = add_margins(options=options_of_interest)
-        options_of_interest = add_profits(options=options_of_interest)
-        options_of_interest = add_instrument(instrument=instrument, options=options_of_interest)
+        options_of_interest = get_instrument_options_of_interest(options=options, instrument=instrument)
+        options_of_interest = _enrich_options(options=options_of_interest)
 
         all_options += options_of_interest
 
-    options = sort_options(options=all_options)
-    options = filter_options(options=options)
+        print('Processed for %s' % stock.ticker)
 
-    for seq_no in range(len(options)):
-        options[seq_no]['sequence_id'] = seq_no + 1
+    all_options = list(filter(
+        lambda elem: elem.profit.percentage >= VARIABLES.MINIMUM_PROFIT_PERCENTAGE,
+        sorted(
+            all_options, key=lambda x: x.profit.percentage + x.percentage_dip, reverse=True
+        )
+    ))
 
-    return options
+    for seq_no in range(len(all_options)):
+        all_options[seq_no].sequence_id = seq_no + 1
+
+    return all_options
 
 
 def get_options_of_interest_df(stocks: list) -> models.ProcessedOptions:
     options_of_interest = get_options_of_interest(stocks=stocks)
 
-    flattened_options_of_interest = Utilities.dict_array_to_df(dict_array=options_of_interest)
+    flattened_options_of_interest = Utilities.dict_array_to_df(
+        dict_array=[option.__dict__ for option in options_of_interest]
+    )
 
     df = pd.DataFrame(flattened_options_of_interest)
 
     if len(df) == 0:
         return df
 
-    df['backup_money'] = df['lot_size'] * df['strike']
-
     return df
 
 
 def get_option_last_price(tradingsymbol: str, underlying_instrument: str) -> float:
-    option_chain = get_full_option_chain(instrument_id=underlying_instrument)
+    option_chain = _get_full_option_chain(instrument_id=underlying_instrument)
 
     for option in option_chain['data']:
         if option['tradingsymbol'] == tradingsymbol:
