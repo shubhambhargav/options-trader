@@ -4,3 +4,4 @@ config.json
 .ipynb*
 __pycache__/
 options-trader/
+profiler.txt
