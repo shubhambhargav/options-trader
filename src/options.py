@@ -108,7 +108,7 @@ def get_margin():
     return response.json()['data']['equity']['net']
 
 
-def _enrich_options(options: List[models.Option]):
+def _enrich_options(options: List[models.Option]) -> List[models.ProcessedOption]:
     enriched_options = []
     margin_data = _get_option_margin_bulk(options=options)
 
@@ -142,7 +142,7 @@ def _enrich_options(options: List[models.Option]):
     return enriched_options
 
 
-def get_options_of_interest(stocks: List[models.StockOfInterest]):
+def get_options_of_interest(stocks: List[models.StockOfInterest]) -> List[models.ProcessedOption]:
     all_options = []
 
     for stock in stocks:
@@ -170,7 +170,7 @@ def get_options_of_interest(stocks: List[models.StockOfInterest]):
     return all_options
 
 
-def get_options_of_interest_df(stocks: list) -> models.ProcessedOptions:
+def get_options_of_interest_df(stocks: List[models.StockOfInterest]) -> models.ProcessedOptions:
     options_of_interest = get_options_of_interest(stocks=stocks)
 
     flattened_options_of_interest = Utilities.dict_array_to_df(
@@ -188,7 +188,7 @@ def get_options_of_interest_df(stocks: list) -> models.ProcessedOptions:
 def get_option_last_price(tradingsymbol: str, underlying_instrument: str) -> float:
     option_chain = _get_full_option_chain(instrument_id=underlying_instrument)
 
-    for option in option_chain['data']:
+    for option in option_chain:
         if option['tradingsymbol'] == tradingsymbol:
             return option['last_price']
 

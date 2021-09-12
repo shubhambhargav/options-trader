@@ -138,11 +138,11 @@ def run():
 
     print(indexed_options[columns].to_string())
 
-    # selection = input('Select the options to trade: ')
-    # selected_options = select_options(options=options_of_interest_df.T.to_dict().values(), selection=selection)
+    selection = input('Select the options to trade: ')
+    selected_options = select_options(options=options_of_interest_df.T.to_dict().values(), selection=selection)
 
-    # for option in selected_options:
-    #     place_order(option=option)
+    for option in selected_options:
+        place_order(option=option)
 
 
 if __name__ == '__main__':
