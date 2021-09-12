@@ -3,3 +3,4 @@ config.json
 .tmp/
 .ipynb*
 __pycache__/
+options-trader/
