@@ -49,10 +49,12 @@ def _get_option_margin_bulk(options: dict) -> List[models.OptionMargin]:
             'transaction_type': 'SELL',
             'product': 'NRML',
             'variety': 'regular',
-            'order_type': 'limit',
+            'order_type': 'LIMIT',
             'quantity': int(option['lot_size']) if option['lot_size'].is_integer() else option['lot_size'],
             'price': option['last_price']
         })
+
+    data = data[:10]
 
     response = requests.post(
         'https://kite.zerodha.com/oms/margins/orders',
@@ -64,7 +66,7 @@ def _get_option_margin_bulk(options: dict) -> List[models.OptionMargin]:
     )
 
     if response.status_code != 200:
-        raise Exception('Invalid response code found: %s, expected: 200' % response.status_code)
+        raise Exception('Invalid response code found: %s, expected: 200, response: %s' % (response.status_code, response.text))
 
     return response.json()['data']
 
