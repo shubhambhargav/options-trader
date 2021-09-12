@@ -24,8 +24,8 @@ class Instrument:
 
 @dataclass
 class StockCustomFilters:
-    minimum_profit: float = 5
-    maximum_profit: float = 20
+    minimum_dip: float = 5
+    maximum_dip: float = 20
 
 
 @dataclass

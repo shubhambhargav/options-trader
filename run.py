@@ -4,6 +4,7 @@ from collections import defaultdict
 from copy import deepcopy
 from datetime import datetime, timedelta
 import requests
+from argparse import ArgumentParser
 
 import runtime_variables as VARIABLES
 from src import _variables as LibVariables
@@ -88,8 +89,20 @@ def _get_total_profit_month_end():
     return total_profit
 
 
+def _get_args():
+    parser = ArgumentParser(description='Get options of interest...')
+    parser.add_argument(
+        '--custom-filtered', dest='custom_filter_enabled', action='store_true',
+        default=False, help='Only use custom filtered stocks...'
+    )
+
+    return parser.parse_args()
+
+
 def run():
     _refresh_config()
+
+    args = _get_args()
 
     total_profit = _get_total_profit_month_end()
 
@@ -97,7 +110,12 @@ def run():
 
     _set_future_gtts()
 
-    options_of_interest_df = get_options_of_interest_df(stocks=VARIABLES.OPTIONS_OF_INTEREST)
+    stocks = VARIABLES.OPTIONS_OF_INTEREST
+
+    if args.custom_filter_enabled:
+        stocks = [stock for stock in stocks if stock.get('custom_filters')]
+
+    options_of_interest_df = get_options_of_interest_df(stocks=stocks)
 
     if len(options_of_interest_df) == 0:
         print('No eligible options found...')

@@ -44,11 +44,12 @@ def get_instrument_data(tickersymbol: str):
     response_headers = ['timestamp', 'open', 'high', 'low', 'close', 'volume']
     
     tickersymbol_backup = {
-        'BANKNIFTY': 'NIFTY BANK'
+        'BANKNIFTY': 'NIFTY BANK',
+        'NIFTY': '256265'
     }
-    
+
     instrument_token = insturment_token_dict[tickersymbol] if tickersymbol in insturment_token_dict else tickersymbol_backup[tickersymbol]
-    
+
     response = requests.get(
         'https://kite.zerodha.com/oms/instruments/historical/%(instrument_token)s/day?user_id=%(user_id)s&oi=1&from=%(from)s&to=%(to)s' % {
             'instrument_token': instrument_token,

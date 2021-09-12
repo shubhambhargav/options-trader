@@ -41,6 +41,8 @@ def _get_option_margin_bulk(options: dict) -> List[models.OptionMargin]:
     # Note: Hard-coded for options and SELL type for now
     # TODO: Possibly change to leverage BUY as well
     data = []
+    chunk_size = 100
+    return_data = []
 
     for option in options:
         data.append({
@@ -54,21 +56,22 @@ def _get_option_margin_bulk(options: dict) -> List[models.OptionMargin]:
             'price': option['last_price']
         })
 
-    data = data[:10]
+    for chunk in Utilities.divide_chunks(input_list=data, chunk_size=chunk_size):
+        response = requests.post(
+            'https://kite.zerodha.com/oms/margins/orders',
+            headers={
+                'Content-Type': 'application/json',
+                'Authorization': f"enctoken {VARIABLES.CONFIG['auth_token']}"
+            },
+            data=json.dumps(chunk)
+        )
 
-    response = requests.post(
-        'https://kite.zerodha.com/oms/margins/orders',
-        headers={
-            'Content-Type': 'application/json',
-            'Authorization': f"enctoken {VARIABLES.CONFIG['auth_token']}"
-        },
-        data=json.dumps(data)
-    )
+        if response.status_code != 200:
+            raise Exception('Invalid response code found: %s, expected: 200, response: %s' % (response.status_code, response.text))
 
-    if response.status_code != 200:
-        raise Exception('Invalid response code found: %s, expected: 200, response: %s' % (response.status_code, response.text))
+        return_data += response.json()['data']
 
-    return response.json()['data']
+    return return_data
 
 
 def get_instrument_options_of_interest(options: list, instrument: dict, custom_filters: models.StockCustomFilters):
@@ -87,7 +90,7 @@ def get_instrument_options_of_interest(options: list, instrument: dict, custom_f
 
         percentage_dip = (instrument_price - option['strike']) / instrument_price * 100
 
-        if custom_filters.minimum_profit < percentage_dip < custom_filters.maximum_profit:
+        if custom_filters.minimum_dip < percentage_dip < custom_filters.maximum_dip:
             option['percentage_dip'] = percentage_dip
 
             selected_options.append(option)
@@ -148,7 +151,18 @@ def get_options_of_interest(stocks: List[models.StockOfInterest]) -> List[models
     all_options = []
 
     for stock in stocks:
+        # Following is a hack in the absence of rendering the incoming subclass dict into
+        # a dataclass. TODO: Find the right way of doing it
+        custom_filters = None
+
+        if stock.get('custom_filters'):
+            custom_filters = models.StockCustomFilters(**stock['custom_filters'])
+
         stock = models.StockOfInterest(**stock)
+
+        if custom_filters:
+            stock.custom_filters = custom_filters
+
         instrument = get_instrument_details(instrument_id=stock.ticker)
         options = _get_full_option_chain(instrument_id=stock.ticker)
 

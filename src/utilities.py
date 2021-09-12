@@ -100,3 +100,7 @@ def get_last_thursday_for_derivative(datetime_str: str):
             break
 
     return t
+
+
+def divide_chunks(input_list: list, chunk_size: int):
+    return [input_list[i:i + chunk_size] for i in range(0, len(input_list), chunk_size)]
