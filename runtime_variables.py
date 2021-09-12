@@ -32,4 +32,8 @@ OPTIONS_OF_INTEREST = [
     { 'ticker': 'LTI' },
     { 'ticker': 'HCLTECH' },
 ]
+OPTIONS_OF_INTEREST = [
+    # Indices
+    { 'ticker': 'NIFTY' }
+]
 CONFIG = json.loads(open('./config.json').read())
