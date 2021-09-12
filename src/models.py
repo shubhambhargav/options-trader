@@ -1,4 +1,4 @@
-from dataclasses import dataclass, is_dataclass
+from dataclasses import dataclass, is_dataclass, field
 from typing import Any
 
 
@@ -23,8 +23,15 @@ class Instrument:
 
 
 @dataclass
+class StockCustomFilters:
+    minimum_profit: float = 5
+    maximum_profit: float = 20
+
+
+@dataclass
 class StockOfInterest:
     ticker: str
+    custom_filters: StockCustomFilters = field(default_factory=StockCustomFilters, init=True)
 
 
 @dataclass

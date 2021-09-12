@@ -2,23 +2,34 @@ import json
 
 # Runtime variables
 OPTIONS_OF_INTEREST = [
-    { 'ticker': 'MARUTI' },
-    { 'ticker': 'INFY' },
+    # Indices
+    # { 'ticker': 'NIFTY' },
+    # Public sector
     { 'ticker': 'COALINDIA' },
+    # Banking & Finance
     { 'ticker': 'ICICIBANK' },
     { 'ticker': 'IDFCFIRSTB' },
+    { 'ticker': 'HDFC' },
+    { 'ticker': 'M&MFIN' },
+    { 'ticker': 'KOTAKBANK' },
+    # { 'ticker': 'BANDHANBNK' },
+    # Consumer goods / manufacturing
     { 'ticker': 'HEROMOTOCO' },
     { 'ticker': 'HINDUNILVR' },
-    { 'ticker': 'NAUKRI' },
-    { 'ticker': 'RELIANCE' },
+    { 'ticker': 'MARUTI' },
     { 'ticker': 'NESTLEIND' },
-    { 'ticker': 'HDFC' },
-    # { 'ticker': 'BANDHANBNK' },
+    # Uncategorized
     { 'ticker': 'DRREDDY' },
-    # { 'ticker': 'PVR' },
-    { 'ticker': 'BHARTIARTL' },
-    { 'ticker': 'KOTAKBANK' },
-    { 'ticker': 'M&MFIN' },
     { 'ticker': 'TATACHEM' },
+    { 'ticker': 'RELIANCE' },
+    { 'ticker': 'BHARTIARTL' },
+    # { 'ticker': 'PVR' },
+    # Tech
+    { 'ticker': 'INFY' },
+    { 'ticker': 'NAUKRI' },
+    { 'ticker': 'COFORGE' },
+    { 'ticker': 'MINDTREE' },
+    { 'ticker': 'LTI' },
+    { 'ticker': 'HCLTECH' },
 ]
 CONFIG = json.loads(open('./config.json').read())

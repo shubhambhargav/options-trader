@@ -69,7 +69,7 @@ def _get_option_margin_bulk(options: dict) -> List[models.OptionMargin]:
     return response.json()['data']
 
 
-def get_instrument_options_of_interest(options: list, instrument: dict):
+def get_instrument_options_of_interest(options: list, instrument: dict, custom_filters: models.StockCustomFilters):
     instrument_price = instrument['last_price']
     selected_options = []
 
@@ -85,7 +85,7 @@ def get_instrument_options_of_interest(options: list, instrument: dict):
 
         percentage_dip = (instrument_price - option['strike']) / instrument_price * 100
 
-        if VARIABLES.PE_OPTIONS_OF_INTEREST_THRESHOLD['min'] < percentage_dip < VARIABLES.PE_OPTIONS_OF_INTEREST_THRESHOLD['max']:
+        if custom_filters.minimum_profit < percentage_dip < custom_filters.maximum_profit:
             option['percentage_dip'] = percentage_dip
 
             selected_options.append(option)
@@ -150,7 +150,9 @@ def get_options_of_interest(stocks: List[models.StockOfInterest]) -> List[models
         instrument = get_instrument_details(instrument_id=stock.ticker)
         options = _get_full_option_chain(instrument_id=stock.ticker)
 
-        options_of_interest = get_instrument_options_of_interest(options=options, instrument=instrument)
+        options_of_interest = get_instrument_options_of_interest(
+            options=options, instrument=instrument, custom_filters=stock.custom_filters
+        )
         options_of_interest = _enrich_options(options=options_of_interest)
 
         all_options += options_of_interest
