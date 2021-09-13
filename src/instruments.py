@@ -92,6 +92,9 @@ def get_instrument_details(instrument_id: str) -> models.Instrument:
 
     data = response.json()
 
+    if not data.get(instrument_id):
+        raise Exception('No options getting traded for %s' % instrument_id)
+
     # Response contains instrument ID as a key, hence to maintain the sanity of the function
     # the response enusures that we are only sending the respective instrument details
     instrument = json.loads(list(data.values())[0])

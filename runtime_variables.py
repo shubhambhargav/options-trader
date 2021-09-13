@@ -9,23 +9,33 @@ OPTIONS_OF_INTEREST = [
     # Banking & Finance
     { 'ticker': 'ICICIBANK' },
     { 'ticker': 'IDFCFIRSTB' },
-    { 'ticker': 'HDFC', 'custom_filters': { 'minimum_dip': 3 } },
+    { 'ticker': 'HDFCBANK', 'custom_filters': { 'minimum_dip': 3 } },
     { 'ticker': 'M&MFIN' },
     { 'ticker': 'KOTAKBANK'},
     { 'ticker': 'BANDHANBNK' },
+    # Insurance
+    { 'ticker': 'HDFCLIFE', 'custom_filters': { 'minimum_dip': 3 } },
     # Consumer goods / manufacturing
     { 'ticker': 'HEROMOTOCO' },
+    { 'ticker': 'TITAN', 'custom_filters': { 'minimum_dip': 3 } },
+    { 'ticker': 'PIDILITIND', 'custom_filters': { 'minimum_dip': 3 } },
+    { 'ticker': 'ASIANPAINT', 'custom_filters': { 'minimum_dip': 3 } },
+    { 'ticker': 'MRF', 'custom_filters': { 'minimum_dip': 3 } },
     { 'ticker': 'HINDUNILVR', 'custom_filters': { 'minimum_dip': 3 } },
     { 'ticker': 'MARUTI' },
     { 'ticker': 'NESTLEIND' },
+    # AMC - Emerging Market
+    { 'ticker': 'HDFCAMC', 'custom_filters': { 'minimum_dip': 3 } },
     # Uncategorized
+    { 'ticker': 'HDFC' },
     { 'ticker': 'DRREDDY' },
     { 'ticker': 'TATACHEM' },
-    { 'ticker': 'RELIANCE' },
+    { 'ticker': 'RELIANCE', 'custom_filters': { 'minimum_dip': 3 } },
     { 'ticker': 'BHARTIARTL' },
     { 'ticker': 'PVR' },
     # Tech
     { 'ticker': 'INFY', 'custom_filters': { 'minimum_dip': 3 } },
+    { 'ticker': 'TCS', 'custom_filters': { 'minimum_dip': 3 } },
     { 'ticker': 'NAUKRI' },
     { 'ticker': 'COFORGE' },
     { 'ticker': 'MINDTREE' },

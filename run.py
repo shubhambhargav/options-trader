@@ -95,6 +95,10 @@ def _get_args():
         '--custom-filtered', dest='custom_filter_enabled', action='store_true',
         default=False, help='Only use custom filtered stocks...'
     )
+    parser.add_argument(
+        '--no-order', dest='is_order_enabled', action='store_false',
+        default=True, help='Enabling ordering or not'
+    )
 
     return parser.parse_args()
 
@@ -108,7 +112,8 @@ def run():
 
     print('Total profit expected till now: %d' % total_profit)
 
-    _set_future_gtts()
+    if args.is_order_enabled:
+        _set_future_gtts()
 
     stocks = VARIABLES.OPTIONS_OF_INTEREST
 
@@ -156,11 +161,12 @@ def run():
 
     print(indexed_options[columns].to_string())
 
-    selection = input('Select the options to trade: ')
-    selected_options = select_options(options=options_of_interest_df.T.to_dict().values(), selection=selection)
+    if args.is_order_enabled:
+        selection = input('Select the options to trade: ')
+        selected_options = select_options(options=options_of_interest_df.T.to_dict().values(), selection=selection)
 
-    for option in selected_options:
-        place_order(option=option)
+        for option in selected_options:
+            place_order(option=option)
 
 
 if __name__ == '__main__':
