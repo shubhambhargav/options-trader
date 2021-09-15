@@ -10,6 +10,3 @@ def get_cookie_dict():
 
     return cookie_dict
 
-
-if __name__ == '__main__':
-    print(get_cookie_dict())

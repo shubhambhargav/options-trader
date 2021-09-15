@@ -1,9 +1,4 @@
 import json
-import pandas as pd
-from collections import defaultdict
-from copy import deepcopy
-from datetime import datetime, timedelta
-import requests
 from argparse import ArgumentParser
 
 from src.models import *
@@ -12,7 +7,7 @@ import runtime_variables as VARIABLES
 from src import _variables as LibVariables
 from src.options import get_options_of_interest_df, select_options
 from src.orders import place_order
-from src.chrome import get_cookie_dict
+from src.external.chrome import get_cookie_dict
 from src.instruments import get_enriched_instruments_df
 from src.technical_indicators import add_recommendations
 from src.positions import add_positions, get_positions
