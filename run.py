@@ -6,6 +6,8 @@ from datetime import datetime, timedelta
 import requests
 from argparse import ArgumentParser
 
+from src.models import *
+from src.controllers import *
 import runtime_variables as VARIABLES
 from src import _variables as LibVariables
 from src.options import get_options_of_interest_df, select_options
@@ -14,9 +16,6 @@ from src.chrome import get_cookie_dict
 from src.instruments import get_enriched_instruments_df
 from src.technical_indicators import add_recommendations
 from src.positions import add_positions, get_positions
-from src.utilities import tradingsymbol_to_meta
-from src.futures import place_gtt_for_option
-from src.gtt import get_gtt
 
 
 def _refresh_config():
@@ -37,46 +36,6 @@ def _refresh_config():
 
 def _get_indicators():
     return get_enriched_instruments_df(insturments_of_interest=VARIABLES.OPTIONS_OF_INTEREST)
-
-
-def _get_future_option_diff(positions: list):
-    diff_array = []
-
-    for position in sorted(positions, key=lambda x: x['tradingsymbol']):
-        if position['tradingsymbol'].endswith('PE'):
-            diff_array.append(position)
-
-        if position['tradingsymbol'].endswith('FUT'):
-            diff_array.pop(-1)
-
-    for opt in diff_array:
-        opt.update(tradingsymbol_to_meta(tradingsymbol=opt['tradingsymbol']))
-
-    return diff_array
-
-
-def _set_future_gtts():
-    positions = get_positions()
-    gtts = get_gtt()
-
-    gtt_tradingsymbol = set([elem['condition']['tradingsymbol'] for elem in gtts])
-
-    uncovered_options = _get_future_option_diff(positions=positions['net'])
-
-    for option in uncovered_options:
-        # TODO: Remove / increase the stoploss for the options
-        # TODO: Convert the following in a utility function
-        tradingsymbol = '%(instrument)s%(datetime)sFUT' % {
-            'instrument': option['instrument'],
-            'datetime': option['datetime']
-        }
-
-        if tradingsymbol in gtt_tradingsymbol:
-            print('Found existing future for: %s, skipping...' % tradingsymbol)
-
-            continue
-
-        place_gtt_for_option(option=option)
 
 
 def _get_total_profit_month_end():
@@ -113,7 +72,7 @@ def run():
     print('Total profit expected till now: %d' % total_profit)
 
     if args.is_order_enabled:
-        _set_future_gtts()
+        PositionsController.cover_naked_positions()
 
     stocks = VARIABLES.OPTIONS_OF_INTEREST
 

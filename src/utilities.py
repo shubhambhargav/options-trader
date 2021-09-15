@@ -14,16 +14,16 @@ def round_nearest(number: float, unit: float):
 
 def csv_text_to_dict(text_data: str):
     split_data = text_data.split('\n')
-    
+
     headers = split_data[0].split(',')
     resp_data = []
-    
+
     for data in split_data[1:]:
         if not data:
             continue
-        
+
         resp_data.append(dict(zip(headers, data.split(','))))
-        
+
     return resp_data
 
 

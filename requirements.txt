@@ -1,3 +1,4 @@
+dacite==1.6.0
 emoji==1.4.2
 keyring==23.0.1
 lz4==3.1.3

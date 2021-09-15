@@ -33,6 +33,7 @@ OPTIONS_OF_INTEREST = [
     { 'ticker': 'RELIANCE', 'custom_filters': { 'minimum_dip': 3 } },
     { 'ticker': 'BHARTIARTL' },
     { 'ticker': 'PVR' },
+    { 'ticker': 'ITC', 'custom_filters': { 'minimum_dip': 3 } },
     # Tech
     { 'ticker': 'INFY', 'custom_filters': { 'minimum_dip': 3 } },
     { 'ticker': 'TCS', 'custom_filters': { 'minimum_dip': 3 } },
@@ -41,5 +42,8 @@ OPTIONS_OF_INTEREST = [
     { 'ticker': 'MINDTREE' },
     { 'ticker': 'LTI' },
     { 'ticker': 'HCLTECH' },
+]
+OPTIONS_OF_INTEREST = [
+    { 'ticker': 'HDFCBANK', 'custom_filters': { 'minimum_dip': 3 } },
 ]
 CONFIG = json.loads(open('./config.json').read())

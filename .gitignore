@@ -3,5 +3,8 @@ config.json
 .tmp/
 .ipynb*
 __pycache__/
+
+# Development and testing
 options-trader/
 profiler.txt
+.vscode/
