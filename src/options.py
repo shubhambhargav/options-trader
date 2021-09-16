@@ -1,5 +1,7 @@
 from dataclasses import asdict
 import json
+import emoji
+from numpy import isnan
 from src.controllers.options import OptionsController
 from src.models.instruments import InstrumentModel
 import pandas as pd
@@ -19,41 +21,7 @@ except:
     import utilities as Utilities
 
 
-def _enrich_options(options: List[models.OptionModel]) -> List[models.ProcessedOptionModel]:
-    enriched_options = []
-    margin_data = OptionsController.get_option_margin_bulk(options=options)
-
-    # Following is used to avoid multiple calls to the underlying
-    # instrument API
-    instrument_data_cache = {}
-
-    for iteration, option in enumerate(options):
-        option = models.ProcessedOptionModel(**asdict(option))
-
-        option.backup_money = option.strike * option.lot_size
-        option.margin = margin_data[iteration]
-
-        if option.underlying_instrument in instrument_data_cache:
-            option.instrument_data = instrument_data_cache[option.underlying_instrument]
-        else:
-            option.instrument_data = InstrumentsController.get_instrument(tickersymbol=option.underlying_instrument)
-
-            instrument_data_cache[option.underlying_instrument] = option.instrument_data
-
-
-        profit = option.last_price * option.lot_size
-        option.percentage_dip = (option.instrument_data.last_price - option.strike) / option.instrument_data.last_price * 100
-        option.profit = models.OptionProfitModel(**{
-            'value': profit,
-            'percentage': (profit / option.margin.total) * 100
-        })
-
-        enriched_options.append(option)
-
-    return enriched_options
-
-
-def get_options_of_interest(stocks: List[models.StockOfInterest]) -> List[models.ProcessedOptionModel]:
+def get_options_of_interest(stocks: List[models.StockOfInterest]) -> List[models.EnrichedOptionModel]:
     all_options = []
 
     for stock in stocks:
@@ -64,7 +32,7 @@ def get_options_of_interest(stocks: List[models.StockOfInterest]) -> List[models
 
         options = list(filter(
             # Only interested in
-            #   - PE options right now
+            #   - PE options
             #   - valid PE i.e. less price than instrument_price
             #   - only looking for options within next X numeber of days
             lambda option: option.instrument_type == 'PE' \
@@ -73,16 +41,16 @@ def get_options_of_interest(stocks: List[models.StockOfInterest]) -> List[models
                 and stock.custom_filters.minimum_dip < ((instrument.last_price - option.strike) / instrument.last_price * 100) < stock.custom_filters.maximum_dip,
             options
         ))
-        options = _enrich_options(options=options)
+        options = OptionsController.enrich_options(options=options)
 
         all_options += options
 
         print('Processed for %s' % stock.ticker)
 
     all_options = list(filter(
-        lambda elem: elem.profit.percentage >= VARIABLES.MINIMUM_PROFIT_PERCENTAGE,
+        lambda elem: elem.profit__percentage >= VARIABLES.MINIMUM_PROFIT_PERCENTAGE,
         sorted(
-            all_options, key=lambda x: x.profit.percentage + x.percentage_dip, reverse=True
+            all_options, key=lambda x: x.profit__percentage + x.percentage_dip, reverse=True
         )
     ))
 
@@ -92,14 +60,14 @@ def get_options_of_interest(stocks: List[models.StockOfInterest]) -> List[models
     return all_options
 
 
-def get_options_of_interest_df(stocks: List[models.StockOfInterest]) -> models.ProcessedOptionsModel:
+def get_options_of_interest_df(stocks: List[models.StockOfInterest]) -> models.EnrichedOptionModel:
     options_of_interest = get_options_of_interest(stocks=stocks)
 
     flattened_options_of_interest = Utilities.dict_array_to_df(
         dict_array=[asdict(option) for option in options_of_interest]
     )
 
-    df = pd.DataFrame(flattened_options_of_interest)
+    df = pd.json_normalize(flattened_options_of_interest)
 
     if len(df) == 0:
         return df

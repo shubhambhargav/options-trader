@@ -1,82 +1,17 @@
-import json
+from dataclasses import asdict
 from datetime import datetime, timedelta
 
-import requests
 import pandas as pd
 
-from . import utilities as Utilities
 from ._variables import VARIABLES
 from . import technical_indicators
-from . import models
-
-INSTRUMENT_TOKEN_DICT = {}
-
-
-def get_instrument_token_dict():
-    global INSTRUMENT_TOKEN_DICT
-
-    if INSTRUMENT_TOKEN_DICT:
-        return INSTRUMENT_TOKEN_DICT
-
-    response = requests.get('https://api.kite.trade/instruments')
-
-    if response.status_code != 200:
-        raise ValueError('Unexpected response code found: %d, response: %s' % (response.status_code, response.text))
-
-    instruments = Utilities.csv_text_to_dict(response.text)
-    instrument_token_dict = {}
-
-    for instrument in instruments:
-        instrument_token_dict[instrument['tradingsymbol']] = instrument['instrument_token']
-
-    # Caching the response
-    # TODO: Maybe look for alternate implementation here
-    INSTRUMENT_TOKEN_DICT = instrument_token_dict
-
-    return instrument_token_dict
-
-
-def get_instrument_data(tickersymbol: str):
-    insturment_token_dict = get_instrument_token_dict()
-    config = VARIABLES.CONFIG
-
-    # Following is documented here: https://kite.trade/docs/connect/v3/historical/
-    response_headers = ['timestamp', 'open', 'high', 'low', 'close', 'volume']
-
-    tickersymbol_backup = {
-        'BANKNIFTY': 'NIFTY BANK',
-        'NIFTY': '256265'
-    }
-
-    instrument_token = insturment_token_dict[tickersymbol] if tickersymbol in insturment_token_dict else tickersymbol_backup[tickersymbol]
-
-    response = requests.get(
-        'https://kite.zerodha.com/oms/instruments/historical/%(instrument_token)s/day?user_id=%(user_id)s&oi=1&from=%(from)s&to=%(to)s' % {
-            'instrument_token': instrument_token,
-            'user_id': config['user_id'],
-            'from': (datetime.now() - timedelta(days=365)).strftime('%Y-%m-%d'),
-            'to': datetime.now().strftime('%Y-%m-%d')
-        },
-        headers={
-            'Authorization': f"enctoken {VARIABLES.CONFIG['auth_token']}"
-        }
-    )
-
-    if response.status_code != 200:
-        raise ValueError('Unexpected response code found: %d, response: %s' % (response.status_code, response.text))
-
-    instrument_data = []
-
-    for row in response.json()['data']['candles']:
-        instrument_data.append(dict(zip(response_headers, row)))
-
-    return instrument_data
+from .controllers import InstrumentsController
 
 
 def _get_enriched_instrument_df(tickersymbol: str):
-    instrument_data = get_instrument_data(tickersymbol=tickersymbol)
+    instrument_candles = InstrumentsController.get_instrument_candles(tickersymbol=tickersymbol)
 
-    instrument_df = pd.DataFrame.from_dict(data=instrument_data)
+    instrument_df = pd.DataFrame.from_dict(data=[asdict(candle) for candle in instrument_candles])
 
     instrument_df['tickersymbol'] = tickersymbol
 

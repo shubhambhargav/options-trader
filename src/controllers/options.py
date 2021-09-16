@@ -1,6 +1,9 @@
+from collections import defaultdict
+from dataclasses import asdict
 import json
+from src.controllers.positions import PositionsController
 from typing import List
-from dacite.core import from_dict
+from dacite import from_dict
 
 import requests
 
@@ -9,7 +12,7 @@ from .instruments import InstrumentsController
 from ..models import (
     OptionModel,
     OptionMarginModel,
-    ProcessedOptionModel,
+    EnrichedOptionModel,
     InstrumentModel
 )
 from .._variables import VARIABLES
@@ -18,9 +21,9 @@ from .. import utilities as Utilities
 
 class OptionsController:
     @staticmethod
-    def get_option_last_price(option: ProcessedOptionModel) -> float:
-        if not isinstance(option, ProcessedOptionModel):
-            option = from_dict(data_class=ProcessedOptionModel, data=option)
+    def get_option_last_price(option: EnrichedOptionModel) -> float:
+        if not isinstance(option, EnrichedOptionModel):
+            option = from_dict(data_class=EnrichedOptionModel, data=option)
 
         # TODO: Find a better way to get the last price. Currently we are getting
         #       the entire option chain to get the last price of an option
@@ -33,11 +36,11 @@ class OptionsController:
         return None
 
     @staticmethod
-    def sell_option(option: ProcessedOptionModel):
+    def sell_option(option: EnrichedOptionModel):
         # Since the price of the option can change during the analysis,
         # following code ensures that we don't trade at a lower value than the last price
-        if not isinstance(option, ProcessedOptionModel):
-            option = ProcessedOptionModel(**option)
+        if not isinstance(option, EnrichedOptionModel):
+            option = from_dict(data_class=EnrichedOptionModel, data=option)
 
         option_last_price = OptionsController.get_option_last_price(tradingsymbol=option.name, underlying_instrument=option['instrument'])
         expected_trade_price = option.last_price
@@ -125,3 +128,40 @@ class OptionsController:
             return_data += response.json()['data']
 
         return [from_dict(data_class=OptionMarginModel, data=option_margin) for option_margin in return_data]
+
+    @staticmethod
+    def enrich_options(options: List[OptionModel]) -> List[EnrichedOptionModel]:
+        enriched_options = []
+        margin_data = OptionsController.get_option_margin_bulk(options=options)
+        positions = PositionsController.get_positions()
+
+        instrument_positions = defaultdict(list)
+        option_positions = defaultdict()
+
+        for position in positions:
+            instrument_positions[position.underlying_instrument].append(position)
+            option_positions[position.tradingsymbol] = position
+
+        # Following is used to avoid multiple calls to the underlying instrument API
+        instrument_data_cache = {}
+
+        for iteration, option in enumerate(options):
+            option = EnrichedOptionModel(**asdict(option))
+
+            option.position = option_positions.get(option.tradingsymbol)
+            option.instrument_positions = instrument_positions.get(option.underlying_instrument)
+            option.margin = margin_data[iteration]
+
+            if option.underlying_instrument in instrument_data_cache:
+                option.instrument_data = instrument_data_cache[option.underlying_instrument]
+            else:
+                option.instrument_data = InstrumentsController.get_instrument(tickersymbol=option.underlying_instrument)
+
+                instrument_data_cache[option.underlying_instrument] = option.instrument_data
+
+            option.percentage_dip = (option.instrument_data.last_price - option.strike) / option.instrument_data.last_price * 100
+            option.profit__percentage = (option.profit / option.margin.total) * 100
+
+            enriched_options.append(option)
+
+        return enriched_options

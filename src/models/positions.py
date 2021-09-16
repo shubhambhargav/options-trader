@@ -1,3 +1,4 @@
+import re
 from dataclasses import dataclass
 
 
@@ -32,12 +33,15 @@ class PositionModel:
     tradingsymbol: str
     unrealised: float
     value: float
+    pnl_month_end: float = 0
+    underlying_instrument: str = ''
 
-    @property
-    def pnl_month_end(self) -> float:
+    def __post_init__(self):
+        self.underlying_instrument = re.search('[A-Z]+', self.tradingsymbol)[0]
+
         # TODO: Add logic for CE type options as well
         if self.tradingsymbol.endswith('PE') and self.quantity < 0:
-            return abs(self.quantity * self.average_price)
-
-        return self.pnl
+            self.pnl_month_end = abs(self.quantity * self.average_price)
+        else:
+            self.pnl_month_end = self.pnl
 

@@ -1,9 +1,10 @@
 from dataclasses import dataclass, is_dataclass, field
-from typing import Any
+from typing import Any, List
 from datetime import datetime
 
 from .base import DefaultVal
 from .instruments import InstrumentModel
+from .positions import PositionModel
 
 OPTIONS_EXPIRY_DATETIME_FORMAT = '%Y-%m-%d'
 
@@ -33,13 +34,16 @@ class OptionModel:
     tradingsymbol: str
     underlying_instrument: str
     volume: int
+    backup_money: float = 0
+    profit: float = 0
+    time_to_expiry_in_days: int = 0
 
-    @property
-    def time_to_expiry_in_days(self) -> int:
-        today = datetime.now()
-        expiry = datetime.strptime(self.expiry, OPTIONS_EXPIRY_DATETIME_FORMAT)
-
-        return (expiry - today).days
+    def __post_init__(self):
+        self.backup_money = self.strike * self.lot_size
+        self.profit = self.last_price * self.lot_size
+        self.time_to_expiry_in_days = (
+            datetime.strptime(self.expiry, OPTIONS_EXPIRY_DATETIME_FORMAT) - datetime.now()
+        ).days
 
 
 @dataclass
@@ -60,23 +64,12 @@ class OptionMarginModel:
 
 
 @dataclass
-class OptionProfitModel:
-    value: float
-    percentage: float
-
-
-@dataclass
-class ProcessedOptionModel(OptionModel):
+class EnrichedOptionModel(OptionModel):
     "Option with added metadata for recommendation and selection purposes"
-    percentage_dip: float = DefaultVal(0)
+    percentage_dip: float = 0
     margin: OptionMarginModel = DefaultVal(OptionMarginModel)
-    profit: OptionProfitModel = DefaultVal(OptionProfitModel)
     instrument_data: InstrumentModel = DefaultVal(InstrumentModel)
-    backup_money: float = DefaultVal(0)
-    sequence_id: int = DefaultVal(0)
-
-
-@dataclass
-class ProcessedOptionsModel(ProcessedOptionModel):
-    "This is more of a dataframe representation of Option as compared to an array of objects"
-    pass
+    sequence_id: int = 0
+    profit__percentage: float = 0
+    position: PositionModel = DefaultVal(PositionModel)
+    instrument_positions: List[PositionModel] = DefaultVal(List[PositionModel])

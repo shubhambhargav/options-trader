@@ -9,4 +9,3 @@ def get_cookie_dict():
         cookie_dict[cookie.name] = cookie.value
 
     return cookie_dict
-

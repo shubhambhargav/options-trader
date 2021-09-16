@@ -1,4 +1,4 @@
-from src import positions
+from os import stat
 from typing import List
 
 import requests

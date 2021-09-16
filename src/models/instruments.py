@@ -16,3 +16,13 @@ class InstrumentModel:
     last_updated_at: str
     per_expiry_data: dict
     sector: Any
+
+
+@dataclass
+class CandleModel:
+    timestamp: str
+    open: float
+    high: float
+    low: float
+    close: float
+    volume: int

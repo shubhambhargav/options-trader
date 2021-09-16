@@ -61,7 +61,6 @@ def dict_array_to_df(dict_array: list):
     return resp_data
 
 
-
 def tradingsymbol_to_meta(tradingsymbol: str):
     metadata = TRADINGSYMBOL_META.match(tradingsymbol)
 
@@ -75,7 +74,6 @@ def tradingsymbol_to_meta(tradingsymbol: str):
         metadata_dict['type'] = 'OPT'
 
     return metadata_dict
-
 
 
 def get_last_thursday_for_derivative(datetime_str: str):

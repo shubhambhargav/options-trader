@@ -2,8 +2,6 @@ import json
 
 # Runtime variables
 OPTIONS_OF_INTEREST = [
-    # Indices
-    { 'ticker': 'NIFTY', 'custom_filters': { 'minimum_dip': 2 } },
     # Public sector
     { 'ticker': 'COALINDIA' },
     # Banking & Finance
@@ -43,7 +41,8 @@ OPTIONS_OF_INTEREST = [
     { 'ticker': 'LTI' },
     { 'ticker': 'HCLTECH' },
 ]
-OPTIONS_OF_INTEREST = [
-    { 'ticker': 'HDFCBANK', 'custom_filters': { 'minimum_dip': 1 } },
-]
+# OPTIONS_OF_INTEREST = [
+#     { 'ticker': 'PVR', 'custom_filters': { 'minimum_dip': 3 } },
+#     # { 'ticker': 'HCLTECH' },
+# ]
 CONFIG = json.loads(open('./config.json').read())
