@@ -43,6 +43,6 @@ OPTIONS_OF_INTEREST = [
 ]
 # OPTIONS_OF_INTEREST = [
 #     { 'ticker': 'PVR', 'custom_filters': { 'minimum_dip': 3 } },
-#     # { 'ticker': 'HCLTECH' },
+#     { 'ticker': 'HCLTECH' },
 # ]
 CONFIG = json.loads(open('./config.json').read())

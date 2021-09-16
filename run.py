@@ -83,9 +83,12 @@ def run():
     options_df.underlying_instrument[options_df.instrument_positions.notnull()] = options_df.underlying_instrument.apply(
         lambda x: emoji.emojize(x + ' :white_check_mark:', use_aliases=True)
     )
-    options_df['existing'] = (options_df.position__quantity / options_df.lot_size).apply(
-        lambda x: 'NA' if isnan(x) else emoji.emojize(str(abs(x)) + ' :white_check_mark:', use_aliases=True)
-    )
+    options_df['existing'] = 'NA'
+
+    if 'position__quantity' in list(options_df.columns):
+        options_df['existing'] = (options_df.position__quantity / options_df.lot_size).apply(
+            lambda x: 'NA' if isnan(x) else emoji.emojize(str(abs(x)) + ' :white_check_mark:', use_aliases=True)
+        )
 
     options_df.rename(
         columns={
