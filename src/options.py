@@ -4,11 +4,8 @@ from src.controllers.options import OptionsController
 from src.models.instruments import InstrumentModel
 import pandas as pd
 from typing import List
-from datetime import datetime
 
 from dacite import from_dict
-
-import requests
 
 try:
     from ._variables import VARIABLES

@@ -2,8 +2,7 @@ import requests
 
 from ._variables import VARIABLES
 from . import utilities as Utilities
-from . import options
-from .controllers.options import OptionsController
+from .controllers import OptionsController
 
 
 def place_order(option: dict):

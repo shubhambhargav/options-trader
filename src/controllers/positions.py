@@ -1,3 +1,4 @@
+from src import positions
 from typing import List
 
 import requests
@@ -62,6 +63,12 @@ class PositionsController:
             raise Exception('Invalid response code found: %s, expected: 200' % response.status_code)
 
         return [PositionModel(**position) for position in response.json()['data']['net']]
+
+    @staticmethod
+    def get_pnl_month_end() -> float:
+        positions = PositionsController.get_positions()
+
+        return sum([position.pnl_month_end for position in positions])
 
     @staticmethod
     def cover_naked_positions():

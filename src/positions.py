@@ -1,31 +1,15 @@
-import requests
+from dataclasses import asdict
 import emoji
 import pandas as pd
 
 from ._variables import VARIABLES
-
-
-def get_positions():
-    response = requests.get(
-        'https://kite.zerodha.com/oms/portfolio/positions',
-        headers={
-            'Content-Type': 'application/json',
-            'Authorization': f"enctoken {VARIABLES.CONFIG['auth_token']}"
-        }
-    )
-
-    if response.status_code not in [200, 304]:
-        raise Exception('Invalid response code found: %s, expected: 200' % response.status_code)
-
-    return response.json()['data']
+from .controllers import PositionsController
 
 
 def get_positions_df():
-    positions_response = get_positions()
+    positions = PositionsController.get_positions()
 
-    positions = positions_response['net'] + positions_response['day']
-
-    return pd.DataFrame(positions)
+    return pd.DataFrame([asdict(position) for position in positions])
 
 
 def add_positions(options_df):

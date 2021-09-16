@@ -33,3 +33,11 @@ class PositionModel:
     unrealised: float
     value: float
 
+    @property
+    def pnl_month_end(self) -> float:
+        # TODO: Add logic for CE type options as well
+        if self.tradingsymbol.endswith('PE') and self.quantity < 0:
+            return abs(self.quantity * self.average_price)
+
+        return self.pnl
+
