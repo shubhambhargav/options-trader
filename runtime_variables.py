@@ -44,6 +44,6 @@ OPTIONS_OF_INTEREST = [
     { 'ticker': 'HCLTECH' },
 ]
 OPTIONS_OF_INTEREST = [
-    { 'ticker': 'HDFCBANK', 'custom_filters': { 'minimum_dip': 3 } },
+    { 'ticker': 'HDFCBANK', 'custom_filters': { 'minimum_dip': 1 } },
 ]
 CONFIG = json.loads(open('./config.json').read())

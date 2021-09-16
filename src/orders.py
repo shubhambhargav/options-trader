@@ -3,12 +3,13 @@ import requests
 from ._variables import VARIABLES
 from . import utilities as Utilities
 from . import options
+from .controllers.options import OptionsController
 
 
 def place_order(option: dict):
     # Since the price of the option can change during the analysis,
     # following code ensures that we don't trade at a lower value than the last price
-    option_last_price = options.get_option_last_price(tradingsymbol=option['name'], underlying_instrument=option['instrument'])
+    option_last_price = OptionsController.get_option_last_price(option=option)
     expected_trade_price = option['last_price']
 
     if option_last_price > expected_trade_price:
@@ -44,16 +45,16 @@ def place_order(option: dict):
         'content-type': 'application/x-www-form-urlencoded',
         'Authorization': f"enctoken {VARIABLES.CONFIG['auth_token']}"
     }
-    
+
     response = requests.post(
         'https://kite.zerodha.com/oms/orders/regular',
         headers=headers,
         data=data
     )
-    
+
     if response.status_code == 200:
         print('Successfully placed the order for %s' % option['name'])
-        
+
         return
 
     print('Unexpected response code got from Kite while placing the order: %d, error: %s' % (response.status_code, response.text))

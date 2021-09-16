@@ -28,7 +28,7 @@ def add_indicators(instrument_df):
 
 def add_buying_signal(instrument_df):
     instrument_df['buy_signal'] = 0
-    
+
     instrument_df.loc[
         instrument_df['macd'].shift(1).gt(instrument_df['signal'].shift(1)) &
             instrument_df['macd'].shift(2).gt(instrument_df['signal'].shift(2)) &

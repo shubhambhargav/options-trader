@@ -19,10 +19,10 @@ def get_instrument_token_dict():
         return INSTRUMENT_TOKEN_DICT
 
     response = requests.get('https://api.kite.trade/instruments')
-    
+
     if response.status_code != 200:
         raise ValueError('Unexpected response code found: %d, response: %s' % (response.status_code, response.text))
-    
+
     instruments = Utilities.csv_text_to_dict(response.text)
     instrument_token_dict = {}
 
@@ -42,7 +42,7 @@ def get_instrument_data(tickersymbol: str):
 
     # Following is documented here: https://kite.trade/docs/connect/v3/historical/
     response_headers = ['timestamp', 'open', 'high', 'low', 'close', 'volume']
-    
+
     tickersymbol_backup = {
         'BANKNIFTY': 'NIFTY BANK',
         'NIFTY': '256265'
@@ -73,42 +73,9 @@ def get_instrument_data(tickersymbol: str):
     return instrument_data
 
 
-
-def get_instrument_details(instrument_id: str) -> models.Instrument:
-    """Legacy function from options module"""
-    # TODO: Possibly retire this function
-    response = requests.post(
-        'https://api.sensibull.com/v1/instrument_details',
-        headers={
-            'Content-Type': 'application/json'
-        },
-        data=json.dumps({
-            'underlyings': [instrument_id]
-        })
-    )
-
-    if response.status_code != 200:
-        raise Exception('Invalid response code found: %s, expected: 200' % response.status_code)
-
-    data = response.json()
-
-    if not data.get(instrument_id):
-        raise Exception('No options getting traded for %s' % instrument_id)
-
-    # Response contains instrument ID as a key, hence to maintain the sanity of the function
-    # the response enusures that we are only sending the respective instrument details
-    instrument = json.loads(list(data.values())[0])
-
-    # Following is being done to account for @dataclass compatibility
-    # with class attributes only starting with non-digit characters
-    instrument.pop('200DMA_volume', None)
-
-    return instrument
-
-
 def _get_enriched_instrument_df(tickersymbol: str):
     instrument_data = get_instrument_data(tickersymbol=tickersymbol)
-    
+
     instrument_df = pd.DataFrame.from_dict(data=instrument_data)
 
     instrument_df['tickersymbol'] = tickersymbol
@@ -124,10 +91,10 @@ def get_enriched_instruments_df(insturments_of_interest: list):
 
     for instrument in insturments_of_interest:
         instrument_df = _get_enriched_instrument_df(tickersymbol=instrument['ticker'])
-        
+
         if final_df.empty:
             final_df = instrument_df
-            
+
             continue
 
         final_df = pd.concat([final_df, instrument_df])

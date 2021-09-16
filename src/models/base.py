@@ -8,21 +8,6 @@ class DefaultVal:
 
 
 @dataclass
-class Instrument:
-    instrument_token: int
-    close_price: float
-    net_change: float
-    last_price: float
-    volume: int
-    prev_day_volume: int
-    prev_day_traded_value: float
-    projected_volume: int
-    last_updated_at: str
-    per_expiry_data: dict
-    sector: str
-
-
-@dataclass
 class StockCustomFilters:
     minimum_dip: float = 5
     maximum_dip: float = 20

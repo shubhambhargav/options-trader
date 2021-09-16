@@ -1,9 +1,12 @@
+from dataclasses import asdict
 import json
+from src.controllers.options import OptionsController
+from src.models.instruments import InstrumentModel
 import pandas as pd
 from typing import List
-from copy import deepcopy
-from datetime import datetime, timedelta
-from multiprocessing import Pool
+from datetime import datetime
+
+from dacite import from_dict
 
 import requests
 
@@ -11,7 +14,7 @@ try:
     from ._variables import VARIABLES
     from . import utilities as Utilities
     from . import models
-    from .instruments import get_instrument_details
+    from .controllers.instruments import InstrumentsController
 except:
     # In order to run the module in isolation, following is required
     # This enables local testing
@@ -19,125 +22,31 @@ except:
     import utilities as Utilities
 
 
-def get_time_to_expiry_in_days(option: dict):
-    expiry = datetime.strptime(option['expiry'], VARIABLES.DATETIME_FORMAT)
-    today = datetime.now()
-
-    return (expiry - today).days
-
-
-def _get_full_option_chain(instrument_id: str):
-    response = requests.get(
-        'https://api.sensibull.com/v1/instruments/%s' % instrument_id
-    )
-
-    if response.status_code != 200:
-        raise Exception('Invalid response code found: %s, expected: 200' % response.status_code)
-
-    return response.json()['data']
-
-
-def _get_option_margin_bulk(options: dict) -> List[models.OptionMargin]:
-    # Note: Hard-coded for options and SELL type for now
-    # TODO: Possibly change to leverage BUY as well
-    data = []
-    chunk_size = 100
-    return_data = []
-
-    for option in options:
-        data.append({
-            'exchange': 'NFO',
-            'tradingsymbol': option['tradingsymbol'],
-            'transaction_type': 'SELL',
-            'product': 'NRML',
-            'variety': 'regular',
-            'order_type': 'LIMIT',
-            'quantity': int(option['lot_size']) if option['lot_size'].is_integer() else option['lot_size'],
-            'price': option['last_price']
-        })
-
-    for chunk in Utilities.divide_chunks(input_list=data, chunk_size=chunk_size):
-        response = requests.post(
-            'https://kite.zerodha.com/oms/margins/orders',
-            headers={
-                'Content-Type': 'application/json',
-                'Authorization': f"enctoken {VARIABLES.CONFIG['auth_token']}"
-            },
-            data=json.dumps(chunk)
-        )
-
-        if response.status_code != 200:
-            raise Exception('Invalid response code found: %s, expected: 200, response: %s' % (response.status_code, response.text))
-
-        return_data += response.json()['data']
-
-    return return_data
-
-
-def get_instrument_options_of_interest(options: list, instrument: dict, custom_filters: models.StockCustomFilters):
-    instrument_price = instrument['last_price']
-    selected_options = []
-
-    for option in options:
-        if option['instrument_type'] != 'PE':  # only interested in PE options right now
-            continue
-
-        if option['strike'] > instrument_price:  # only interested in valid PE i.e. less price than instrument_price
-            continue
-
-        if get_time_to_expiry_in_days(option=option) > VARIABLES.MAX_TIME_TO_EXPIRY:  # only looking for options within next X numeber of days
-            continue
-
-        percentage_dip = (instrument_price - option['strike']) / instrument_price * 100
-
-        if custom_filters.minimum_dip < percentage_dip < custom_filters.maximum_dip:
-            option['percentage_dip'] = percentage_dip
-
-            selected_options.append(option)
-
-    return selected_options
-
-
-def get_margin():
-    response = requests.get(
-        'https://kite.zerodha.com/oms/user/margins',
-        headers={
-            'Authorization': f"enctoken {VARIABLES.CONFIG['auth_token']}",
-            'Content-Type': 'application/json'
-        }
-    )
-
-    if response.status_code != 200:
-        raise Exception('Invalid response code found: %s, expected: 200' % response.status_code)
-
-    return response.json()['data']['equity']['net']
-
-
-def _enrich_options(options: List[models.Option]) -> List[models.ProcessedOption]:
+def _enrich_options(options: List[models.OptionModel]) -> List[models.ProcessedOptionModel]:
     enriched_options = []
-    margin_data = _get_option_margin_bulk(options=options)
+    margin_data = OptionsController.get_option_margin_bulk(options=options)
 
     # Following is used to avoid multiple calls to the underlying
     # instrument API
     instrument_data_cache = {}
 
     for iteration, option in enumerate(options):
-        option = models.ProcessedOption(**option)
+        option = models.ProcessedOptionModel(**asdict(option))
 
         option.backup_money = option.strike * option.lot_size
-        option.margin = models.OptionMargin(**margin_data[iteration])
+        option.margin = margin_data[iteration]
 
         if option.underlying_instrument in instrument_data_cache:
             option.instrument_data = instrument_data_cache[option.underlying_instrument]
         else:
-            instrument_data = get_instrument_details(instrument_id=option.underlying_instrument)
-            option.instrument_data = models.Instrument(**instrument_data)
+            option.instrument_data = InstrumentsController.get_instrument(tickersymbol=option.underlying_instrument)
 
-            instrument_data_cache[option.underlying_instrument] = instrument_data
+            instrument_data_cache[option.underlying_instrument] = option.instrument_data
 
 
         profit = option.last_price * option.lot_size
-        option.profit = models.OptionProfit(**{
+        option.percentage_dip = (option.instrument_data.last_price - option.strike) / option.instrument_data.last_price * 100
+        option.profit = models.OptionProfitModel(**{
             'value': profit,
             'percentage': (profit / option.margin.total) * 100
         })
@@ -147,31 +56,29 @@ def _enrich_options(options: List[models.Option]) -> List[models.ProcessedOption
     return enriched_options
 
 
-def get_options_of_interest(stocks: List[models.StockOfInterest]) -> List[models.ProcessedOption]:
+def get_options_of_interest(stocks: List[models.StockOfInterest]) -> List[models.ProcessedOptionModel]:
     all_options = []
 
     for stock in stocks:
-        # Following is a hack in the absence of rendering the incoming subclass dict into
-        # a dataclass. TODO: Find the right way of doing it
-        custom_filters = None
+        stock = from_dict(data_class=models.StockOfInterest, data=stock)
 
-        if stock.get('custom_filters'):
-            custom_filters = models.StockCustomFilters(**stock['custom_filters'])
+        instrument = InstrumentsController.get_instrument(tickersymbol=stock.ticker)
+        options = InstrumentsController.get_options_chain(instrument=instrument)
 
-        stock = models.StockOfInterest(**stock)
+        options = list(filter(
+            # Only interested in
+            #   - PE options right now
+            #   - valid PE i.e. less price than instrument_price
+            #   - only looking for options within next X numeber of days
+            lambda option: option.instrument_type == 'PE' \
+                and option.strike < instrument.last_price \
+                and option.time_to_expiry_in_days < VARIABLES.MAX_TIME_TO_EXPIRY \
+                and stock.custom_filters.minimum_dip < ((instrument.last_price - option.strike) / instrument.last_price * 100) < stock.custom_filters.maximum_dip,
+            options
+        ))
+        options = _enrich_options(options=options)
 
-        if custom_filters:
-            stock.custom_filters = custom_filters
-
-        instrument = get_instrument_details(instrument_id=stock.ticker)
-        options = _get_full_option_chain(instrument_id=stock.ticker)
-
-        options_of_interest = get_instrument_options_of_interest(
-            options=options, instrument=instrument, custom_filters=stock.custom_filters
-        )
-        options_of_interest = _enrich_options(options=options_of_interest)
-
-        all_options += options_of_interest
+        all_options += options
 
         print('Processed for %s' % stock.ticker)
 
@@ -188,11 +95,11 @@ def get_options_of_interest(stocks: List[models.StockOfInterest]) -> List[models
     return all_options
 
 
-def get_options_of_interest_df(stocks: List[models.StockOfInterest]) -> models.ProcessedOptions:
+def get_options_of_interest_df(stocks: List[models.StockOfInterest]) -> models.ProcessedOptionsModel:
     options_of_interest = get_options_of_interest(stocks=stocks)
 
     flattened_options_of_interest = Utilities.dict_array_to_df(
-        dict_array=[option.__dict__ for option in options_of_interest]
+        dict_array=[asdict(option) for option in options_of_interest]
     )
 
     df = pd.DataFrame(flattened_options_of_interest)
@@ -201,16 +108,6 @@ def get_options_of_interest_df(stocks: List[models.StockOfInterest]) -> models.P
         return df
 
     return df
-
-
-def get_option_last_price(tradingsymbol: str, underlying_instrument: str) -> float:
-    option_chain = _get_full_option_chain(instrument_id=underlying_instrument)
-
-    for option in option_chain:
-        if option['tradingsymbol'] == tradingsymbol:
-            return option['last_price']
-
-    return None
 
 
 def select_options(options: list, selection: str):

@@ -1,4 +1,3 @@
-import json
 from typing import List
 
 import requests
@@ -7,7 +6,7 @@ from dacite import from_dict
 
 from .gtt import GTTController
 
-from ..models import PositionModel, GTTModel
+from ..models import PositionModel
 from .._variables import VARIABLES
 from .. import utilities as Utilities
 
@@ -101,5 +100,3 @@ class PositionsController:
                 future_symbol=tradingsymbol,
                 option_meta=option_meta
             )
-
-

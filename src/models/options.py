@@ -1,17 +1,19 @@
 from dataclasses import dataclass, is_dataclass, field
 from typing import Any
+from datetime import datetime
 
-import requests
+from .base import DefaultVal
+from .instruments import InstrumentModel
 
-from .base import DefaultVal, Instrument
+OPTIONS_EXPIRY_DATETIME_FORMAT = '%Y-%m-%d'
 
 
 @dataclass
-class Option:
+class OptionModel:
     broker: str
     exchange: str
     expiry: str
-    instrument_token: str
+    instrument_token: int
     instrument_type: str
     is_non_fno: bool
     is_underlying: bool
@@ -19,7 +21,7 @@ class Option:
     last_quantity: int
     last_traded_timestamp: int
     last_updated_at: str
-    lot_size: int
+    lot_size: float
     mode: str
     multiplier: float
     name: str
@@ -32,9 +34,16 @@ class Option:
     underlying_instrument: str
     volume: int
 
+    @property
+    def time_to_expiry_in_days(self) -> int:
+        today = datetime.now()
+        expiry = datetime.strptime(self.expiry, OPTIONS_EXPIRY_DATETIME_FORMAT)
+
+        return (expiry - today).days
+
 
 @dataclass
-class OptionMargin:
+class OptionMarginModel:
     total: float
     type: str
     tradingsymbol: str
@@ -51,33 +60,23 @@ class OptionMargin:
 
 
 @dataclass
-class OptionProfit:
+class OptionProfitModel:
     value: float
     percentage: float
 
 
 @dataclass
-class ProcessedOption(Option):
+class ProcessedOptionModel(OptionModel):
     "Option with added metadata for recommendation and selection purposes"
     percentage_dip: float = DefaultVal(0)
-    margin: OptionMargin = DefaultVal(OptionMargin)
-    profit: OptionProfit = DefaultVal(OptionProfit)
-    instrument_data: Instrument = DefaultVal(Instrument)
+    margin: OptionMarginModel = DefaultVal(OptionMarginModel)
+    profit: OptionProfitModel = DefaultVal(OptionProfitModel)
+    instrument_data: InstrumentModel = DefaultVal(InstrumentModel)
     backup_money: float = DefaultVal(0)
     sequence_id: int = DefaultVal(0)
 
-    @property
-    def __dict__(self):
-        dict_data = super(ProcessedOption, self).__dict__
-
-        for key, value in dict_data.items():
-            if is_dataclass(value):
-                dict_data[key] = value.__dict__
-
-        return dict_data
-
 
 @dataclass
-class ProcessedOptions(ProcessedOption):
+class ProcessedOptionsModel(ProcessedOptionModel):
     "This is more of a dataframe representation of Option as compared to an array of objects"
     pass
