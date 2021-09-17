@@ -43,7 +43,7 @@ class OptionsController:
         if not isinstance(option, EnrichedOptionModel):
             option = from_dict(data_class=EnrichedOptionModel, data=option)
 
-        option_last_price = OptionsController.get_option_last_price(tradingsymbol=option.name, underlying_instrument=option['instrument'])
+        option_last_price = OptionsController.get_option_last_price(option=option)
         expected_trade_price = option.last_price
 
         if option_last_price > expected_trade_price:

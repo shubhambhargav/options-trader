@@ -9,7 +9,6 @@ from src.controllers import *
 import runtime_variables as VARIABLES
 from src import _variables as LibVariables
 from src.options import get_options_of_interest_df, select_options
-from src.orders import place_order
 from src.external.chrome import get_cookie_dict
 from src.technical_indicators import add_recommendations
 
@@ -113,7 +112,7 @@ def run():
         )
 
         for option in selected_options:
-            place_order(option=option)
+            OptionsController.sell_option(option=option)
 
 
 if __name__ == '__main__':
