@@ -46,9 +46,9 @@ def get_options_of_interest(stocks: List[models.StockOfInterest]) -> List[models
         print('Processed for %s' % stock.tickersymbol)
 
     all_options = list(filter(
-        lambda elem: elem.profit__percentage >= VARIABLES.MINIMUM_PROFIT_PERCENTAGE,
+        lambda elem: elem.profit_percentage >= VARIABLES.MINIMUM_PROFIT_PERCENTAGE,
         sorted(
-            all_options, key=lambda x: x.profit__percentage + x.percentage_dip, reverse=True
+            all_options, key=lambda x: x.profit_percentage + x.percentage_dip, reverse=True
         )
     ))
 
@@ -74,11 +74,11 @@ def get_options_of_interest_df(stocks: List[models.StockOfInterest]) -> models.E
 
 
 def select_options(options: list, selection: str):
-    option_dict = dict((option['seq'], option) for option in options)
+    option_dict = dict((option['sequence_id'], option) for option in options)
     selected_options = []
     expected_info = {
         'profit': 0,
-        'margin': 0
+        'margin__total': 0
     }
 
     for selected in selection.split(','):
@@ -87,8 +87,8 @@ def select_options(options: list, selection: str):
         selected_options.append(option)
 
         expected_info['profit'] += option['profit']
-        expected_info['margin'] += option['margin']
+        expected_info['margin__total'] += option['margin']['total']
 
-    print('Expected profit: %d, margin: %d' % (expected_info['profit'], expected_info['margin']))
+    print('Expected profit: %d, margin: %d' % (expected_info['profit'], expected_info['margin__total']))
 
     return selected_options

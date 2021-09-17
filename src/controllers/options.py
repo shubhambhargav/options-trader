@@ -1,6 +1,7 @@
 from collections import defaultdict
 from dataclasses import asdict
 import json
+from src.models.base import StockOfInterest
 from src.controllers.positions import PositionsController
 from typing import List
 from dacite import from_dict
@@ -27,11 +28,11 @@ class OptionsController:
 
         # TODO: Find a better way to get the last price. Currently we are getting
         #       the entire option chain to get the last price of an option
-        option_chain = InstrumentsController.get_options_chain(instrument=InstrumentModel(**option.instrument_data))
+        option_chain = InstrumentsController.get_options_chain(instrument=option.instrument_data)
 
-        for option in option_chain:
-            if option['tradingsymbol'] == option.tradingsymbol:
-                return option['last_price']
+        for option_elem in option_chain:
+            if option_elem.tradingsymbol == option.tradingsymbol:
+                return option.last_price
 
         return None
 
@@ -143,7 +144,13 @@ class OptionsController:
             option_positions[position.tradingsymbol] = position
 
         # Following is used to avoid multiple calls to the underlying instrument API
-        instrument_data_cache = {}
+        instruments = list(set([option.underlying_instrument for option in options]))
+        instruments_data = dict((instrument, InstrumentsController.get_instrument(tickersymbol=instrument)) for instrument in instruments)
+
+        enriched_instruments_data = InstrumentsController.enrich_instruments(
+            instruments=[from_dict(data_class=StockOfInterest, data={'tickersymbol': instrument}) for instrument in instruments]
+        )
+        enriched_instruments_data = dict((instrument.tickersymbol, instrument) for instrument in enriched_instruments_data)
 
         for iteration, option in enumerate(options):
             option = EnrichedOptionModel(**asdict(option))
@@ -151,17 +158,13 @@ class OptionsController:
             option.position = option_positions.get(option.tradingsymbol)
             option.instrument_positions = instrument_positions.get(option.underlying_instrument)
             option.margin = margin_data[iteration]
-
-            if option.underlying_instrument in instrument_data_cache:
-                option.instrument_data = instrument_data_cache[option.underlying_instrument]
-            else:
-                option.instrument_data = InstrumentsController.get_instrument(tickersymbol=option.underlying_instrument)
-
-                instrument_data_cache[option.underlying_instrument] = option.instrument_data
-
-            option.percentage_dip = (option.instrument_data.last_price - option.strike) / option.instrument_data.last_price * 100
-            option.profit__percentage = (option.profit / option.margin.total) * 100
+            option.profit_percentage = (option.profit / option.margin.total) * 100
 
             enriched_options.append(option)
+
+        for option in enriched_options:
+            option.instrument_data = instruments_data[option.underlying_instrument]
+            option.percentage_dip = (option.instrument_data.last_price - option.strike) / option.instrument_data.last_price * 100
+            option.enriched_instrument = enriched_instruments_data[option.underlying_instrument]
 
         return enriched_options

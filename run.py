@@ -11,7 +11,6 @@ from src import _variables as LibVariables
 from src.options import get_options_of_interest_df, select_options
 from src.orders import place_order
 from src.external.chrome import get_cookie_dict
-from src.instruments import get_enriched_instruments_df
 from src.technical_indicators import add_recommendations
 
 
@@ -29,10 +28,6 @@ def _refresh_config():
     # Following reload is required to ensure that the new auth token is reloaded
     # to the underlying library as well
     LibVariables.reload()
-
-
-def _get_indicators():
-    return get_enriched_instruments_df(insturments_of_interest=VARIABLES.OPTIONS_OF_INTEREST)
 
 
 def _get_args():
@@ -71,14 +66,8 @@ def run():
 
         return
 
-    indicators_df = _get_indicators()
-
-    options_df = options_df.join(
-        indicators_df.set_index('tickersymbol'),
-        how='outer',
-        on='underlying_instrument'
-    )
     options_df.sequence_id = options_df.sequence_id.fillna(-100).astype(int)
+    order_options_df = options_df.copy(deep=True)
 
     # Add metadata about current positions
     options_df.underlying_instrument[options_df.instrument_positions.notnull()] = options_df.underlying_instrument.apply(
@@ -97,8 +86,11 @@ def run():
             'underlying_instrument': 'instrument',
             'instrument_data__close_price': 'instrument_price',
             'percentage_dip': '%_dip',
-            'profit__percentage': '%_profit',
-            'margin__total': 'margin'
+            'profit_percentage': '%_profit',
+            'margin__total': 'margin',
+            'enriched_instrument__close_last_by_min': 'close_last_by_min',
+            'enriched_instrument__close_last_by_avg': 'close_last_by_avg',
+            'enriched_instrument__last_buy_signal': 'last_buy_signal'
         },
         inplace=True
     )
@@ -115,7 +107,10 @@ def run():
 
     if args.is_order_enabled:
         selection = input('Select the options to trade: ')
-        selected_options = select_options(options=options_df.T.to_dict().values(), selection=selection)
+        selected_options = select_options(
+            options=[Utilities.unflatten_dict(data=option) for option in order_options_df.T.to_dict().values()],
+            selection=selection
+        )
 
         for option in selected_options:
             place_order(option=option)

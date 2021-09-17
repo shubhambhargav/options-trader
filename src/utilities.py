@@ -52,6 +52,33 @@ def flatten_dict(data: dict, parent_key: str = '', sep: str = '__') -> dict:
     return dict(items)
 
 
+def unflatten_dict(data: dict, sep: str = '__') -> dict:
+    """Flatten incoming data item.
+
+    Args:
+        data (dict): data
+        sep (str): (default: {'__'})
+
+    Returns:
+        (dict): Transformed data item
+    """
+    tranformed_data = dict()
+
+    for key, value in data.items():
+        parts = key.split(sep)
+        d = tranformed_data
+
+        for part in parts[:-1]:
+            if part not in d:
+                d[part] = dict()
+
+            d = d[part]
+
+        d[parts[-1]] = value
+
+    return tranformed_data
+
+
 def dict_array_to_df(dict_array: list):
     resp_data = []
 

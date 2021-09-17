@@ -1,9 +1,9 @@
-from dataclasses import dataclass, is_dataclass, field
-from typing import Any, List
+from dataclasses import dataclass
+from typing import Any, List, Optional, Union
 from datetime import datetime
 
 from .base import DefaultVal
-from .instruments import InstrumentModel
+from .instruments import InstrumentModel, EnrichedInstrumentModel
 from .positions import PositionModel
 
 OPTIONS_EXPIRY_DATETIME_FORMAT = '%Y-%m-%d'
@@ -70,6 +70,9 @@ class EnrichedOptionModel(OptionModel):
     margin: OptionMarginModel = DefaultVal(OptionMarginModel)
     instrument_data: InstrumentModel = DefaultVal(InstrumentModel)
     sequence_id: int = 0
-    profit__percentage: float = 0
-    position: PositionModel = DefaultVal(PositionModel)
-    instrument_positions: List[PositionModel] = DefaultVal(List[PositionModel])
+    profit_percentage: float = 0
+    position: Optional[PositionModel] = DefaultVal(PositionModel)
+    # TODO: Figure out a way to remove 'str' from the following, currently dataframe conversion transforms
+    #       the underlying value to a stringified (not exactly) type which is not converatable back to an array
+    instrument_positions:  Union[List[PositionModel], str] = DefaultVal(List[PositionModel])
+    enriched_instrument: EnrichedInstrumentModel = DefaultVal(EnrichedInstrumentModel)
