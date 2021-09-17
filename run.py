@@ -98,9 +98,7 @@ def run():
             'instrument_data__close_price': 'instrument_price',
             'percentage_dip': '%_dip',
             'profit__percentage': '%_profit',
-            'margin__total': 'margin',
-            ('close_last_by_min', ''): 'close_last_by_min',
-            ('close_last_by_avg', ''): 'close_last_by_avg'
+            'margin__total': 'margin'
         },
         inplace=True
     )
