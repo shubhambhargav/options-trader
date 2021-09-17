@@ -3,46 +3,46 @@ import json
 # Runtime variables
 OPTIONS_OF_INTEREST = [
     # Public sector
-    { 'ticker': 'COALINDIA' },
+    { 'tickersymbol': 'COALINDIA' },
     # Banking & Finance
-    { 'ticker': 'ICICIBANK' },
-    { 'ticker': 'IDFCFIRSTB' },
-    { 'ticker': 'HDFCBANK', 'custom_filters': { 'minimum_dip': 3 } },
-    { 'ticker': 'M&MFIN' },
-    { 'ticker': 'KOTAKBANK'},
-    { 'ticker': 'BANDHANBNK' },
+    { 'tickersymbol': 'ICICIBANK' },
+    { 'tickersymbol': 'IDFCFIRSTB' },
+    { 'tickersymbol': 'HDFCBANK', 'custom_filters': { 'minimum_dip': 3 } },
+    { 'tickersymbol': 'M&MFIN' },
+    { 'tickersymbol': 'KOTAKBANK'},
+    { 'tickersymbol': 'BANDHANBNK' },
     # Insurance
-    { 'ticker': 'HDFCLIFE', 'custom_filters': { 'minimum_dip': 3 } },
+    { 'tickersymbol': 'HDFCLIFE', 'custom_filters': { 'minimum_dip': 3 } },
     # Consumer goods / manufacturing
-    { 'ticker': 'HEROMOTOCO' },
-    { 'ticker': 'TITAN', 'custom_filters': { 'minimum_dip': 3 } },
-    { 'ticker': 'PIDILITIND', 'custom_filters': { 'minimum_dip': 3 } },
-    { 'ticker': 'ASIANPAINT', 'custom_filters': { 'minimum_dip': 3 } },
-    { 'ticker': 'MRF', 'custom_filters': { 'minimum_dip': 3 } },
-    { 'ticker': 'HINDUNILVR', 'custom_filters': { 'minimum_dip': 3 } },
-    { 'ticker': 'MARUTI' },
-    { 'ticker': 'NESTLEIND' },
+    { 'tickersymbol': 'HEROMOTOCO' },
+    { 'tickersymbol': 'TITAN', 'custom_filters': { 'minimum_dip': 3 } },
+    { 'tickersymbol': 'PIDILITIND', 'custom_filters': { 'minimum_dip': 3 } },
+    { 'tickersymbol': 'ASIANPAINT', 'custom_filters': { 'minimum_dip': 3 } },
+    { 'tickersymbol': 'MRF', 'custom_filters': { 'minimum_dip': 3 } },
+    { 'tickersymbol': 'HINDUNILVR', 'custom_filters': { 'minimum_dip': 3 } },
+    { 'tickersymbol': 'MARUTI' },
+    { 'tickersymbol': 'NESTLEIND' },
     # AMC - Emerging Market
-    { 'ticker': 'HDFCAMC', 'custom_filters': { 'minimum_dip': 3 } },
+    { 'tickersymbol': 'HDFCAMC', 'custom_filters': { 'minimum_dip': 3 } },
     # Uncategorized
-    { 'ticker': 'HDFC' },
-    { 'ticker': 'DRREDDY' },
-    { 'ticker': 'TATACHEM' },
-    { 'ticker': 'RELIANCE', 'custom_filters': { 'minimum_dip': 3 } },
-    { 'ticker': 'BHARTIARTL' },
-    { 'ticker': 'PVR' },
-    { 'ticker': 'ITC', 'custom_filters': { 'minimum_dip': 3 } },
+    { 'tickersymbol': 'HDFC' },
+    { 'tickersymbol': 'DRREDDY' },
+    { 'tickersymbol': 'TATACHEM' },
+    { 'tickersymbol': 'RELIANCE', 'custom_filters': { 'minimum_dip': 3 } },
+    { 'tickersymbol': 'BHARTIARTL' },
+    { 'tickersymbol': 'PVR' },
+    { 'tickersymbol': 'ITC', 'custom_filters': { 'minimum_dip': 3 } },
     # Tech
-    { 'ticker': 'INFY', 'custom_filters': { 'minimum_dip': 3 } },
-    { 'ticker': 'TCS', 'custom_filters': { 'minimum_dip': 3 } },
-    { 'ticker': 'NAUKRI' },
-    { 'ticker': 'COFORGE' },
-    { 'ticker': 'MINDTREE' },
-    { 'ticker': 'LTI' },
-    { 'ticker': 'HCLTECH' },
+    { 'tickersymbol': 'INFY', 'custom_filters': { 'minimum_dip': 3 } },
+    { 'tickersymbol': 'TCS', 'custom_filters': { 'minimum_dip': 3 } },
+    { 'tickersymbol': 'NAUKRI' },
+    { 'tickersymbol': 'COFORGE' },
+    { 'tickersymbol': 'MINDTREE' },
+    { 'tickersymbol': 'LTI' },
+    { 'tickersymbol': 'HCLTECH' },
 ]
-# OPTIONS_OF_INTEREST = [
-#     { 'ticker': 'PVR', 'custom_filters': { 'minimum_dip': 3 } },
-#     { 'ticker': 'HCLTECH' },
-# ]
+OPTIONS_OF_INTEREST = [
+    { 'tickersymbol': 'PVR', 'custom_filters': { 'minimum_dip': 3 } },
+    { 'tickersymbol': 'HCLTECH' },
+]
 CONFIG = json.loads(open('./config.json').read())

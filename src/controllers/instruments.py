@@ -1,12 +1,15 @@
+from dataclasses import asdict
 import json
 from typing import List
 from datetime import datetime, timedelta
 
 import requests
+import pandas as pd
 from dacite import from_dict
 
 from .._variables import VARIABLES
-from ..models import InstrumentModel, CandleModel, OptionModel
+from ..models import InstrumentModel, EnrichedInstrumentModel, CandleModel, OptionModel, StockOfInterest
+from .technicals import TechnicalIndicatorsController
 from .. import utilities as Utilities
 
 
@@ -115,3 +118,50 @@ class InstrumentsController:
             raise Exception('Invalid response code found: %s, expected: 200' % response.status_code)
 
         return [from_dict(data_class=OptionModel, data=option) for option in response.json()['data']]
+
+    @staticmethod
+    def enrich_instruments(instruments: List[StockOfInterest]) -> List[EnrichedInstrumentModel]:
+        candles_df = pd.DataFrame()
+
+        for instrument in instruments:
+            candles = InstrumentsController.get_instrument_candles(tickersymbol=instrument.tickersymbol)
+
+            candles = [{**asdict(candle), **asdict(instrument)} for candle in candles]
+            instrument_candles_df = pd.DataFrame.from_dict(data=candles)
+
+            instrument_candles_df = TechnicalIndicatorsController.add_momentum_indicators(df=instrument_candles_df, column_name='close')
+
+            if candles_df.empty:
+                candles_df = instrument_candles_df
+
+                continue
+
+            candles_df = pd.concat([candles_df, instrument_candles_df])
+
+        last_buy_signal_df = TechnicalIndicatorsController.get_buy_signal(df=candles_df)
+
+        enriched_instrument_df = candles_df.groupby('tickersymbol').agg(
+            close_min=('close', 'min'),
+            close_mean=('close', 'mean'),
+            close_last=('close', 'last'),
+            macd_last=('macd', 'last'),
+            signal_last=('signal', 'last'),
+            rsi_last=('rsi', 'last')
+        )
+
+        enriched_instrument_df['close_last_by_min'] = round(
+            (enriched_instrument_df['close_last'] - enriched_instrument_df['close_min']) /
+                enriched_instrument_df['close_last'] * 100,
+            2
+        )
+        enriched_instrument_df['close_last_by_avg'] = round(
+            (enriched_instrument_df['close_last'] - enriched_instrument_df['close_mean']) /
+                enriched_instrument_df['close_last'] * 100,
+            2
+        )
+
+        enriched_instrument_df = enriched_instrument_df \
+            .join(last_buy_signal_df.set_index('tickersymbol'), on='tickersymbol', how='left') \
+            .reset_index()
+
+        return [from_dict(data_class=EnrichedInstrumentModel, data=instrument) for instrument in enriched_instrument_df.to_dict('records')]

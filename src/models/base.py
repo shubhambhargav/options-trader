@@ -15,5 +15,5 @@ class StockCustomFilters:
 
 @dataclass
 class StockOfInterest:
-    ticker: str
+    tickersymbol: str
     custom_filters: StockCustomFilters = field(default_factory=StockCustomFilters, init=True)

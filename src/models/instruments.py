@@ -1,6 +1,8 @@
 from dataclasses import dataclass
 from typing import Any
 
+from .base import StockOfInterest
+
 
 @dataclass
 class InstrumentModel:
@@ -26,3 +28,12 @@ class CandleModel:
     low: float
     close: float
     volume: int
+
+
+@dataclass
+class EnrichedInstrumentModel(StockOfInterest):
+    last_buy_signal: Any = ''
+    macd: float = 0
+    rsi: float = 0
+    close_last_by_min: float = 0
+    close_last_by_avg: float = 0

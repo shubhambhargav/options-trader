@@ -72,8 +72,9 @@ def run():
         return
 
     indicators_df = _get_indicators()
+
     options_df = options_df.join(
-        indicators_df,
+        indicators_df.set_index('tickersymbol'),
         how='outer',
         on='underlying_instrument'
     )

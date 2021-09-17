@@ -1,6 +1,4 @@
 from dataclasses import asdict
-import json
-import emoji
 from numpy import isnan
 from src.controllers.options import OptionsController
 from src.models.instruments import InstrumentModel
@@ -27,7 +25,7 @@ def get_options_of_interest(stocks: List[models.StockOfInterest]) -> List[models
     for stock in stocks:
         stock = from_dict(data_class=models.StockOfInterest, data=stock)
 
-        instrument = InstrumentsController.get_instrument(tickersymbol=stock.ticker)
+        instrument = InstrumentsController.get_instrument(tickersymbol=stock.tickersymbol)
         options = InstrumentsController.get_options_chain(instrument=instrument)
 
         options = list(filter(
@@ -45,7 +43,7 @@ def get_options_of_interest(stocks: List[models.StockOfInterest]) -> List[models
 
         all_options += options
 
-        print('Processed for %s' % stock.ticker)
+        print('Processed for %s' % stock.tickersymbol)
 
     all_options = list(filter(
         lambda elem: elem.profit__percentage >= VARIABLES.MINIMUM_PROFIT_PERCENTAGE,
