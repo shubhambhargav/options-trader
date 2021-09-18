@@ -108,7 +108,9 @@ def run():
 
     options_df = add_recommendations(option_df=options_df)
 
-    indexed_options = options_df.set_index(['instrument', 'instrument_price', 'expiry', 'close_last_by_min', 'close_last_by_avg', 'last_buy_signal'])
+    indexed_options = options_df \
+        .sort_values(['instrument', 'expiry']) \
+        .set_index(['instrument', 'instrument_price', 'expiry', 'close_last_by_min', 'close_last_by_avg', 'last_buy_signal'])
 
     columns = [
         'seq', 'recommendation', 'existing', '%_dip', 'profit', '%_profit', 'strike', 'last_price', 'margin', 'backup_money'
