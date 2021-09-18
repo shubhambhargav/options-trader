@@ -39,8 +39,20 @@ def _get_args():
         '--no-order', dest='is_order_enabled', action='store_false',
         default=True, help='Enabling ordering or not'
     )
+    parser.add_argument(
+        '--stocks', dest='stocks', type=str,
+        help='List of stocks to process, defaults minimum drop to 3'
+    )
 
-    return parser.parse_args()
+    args = parser.parse_args()
+
+    if args.stocks:
+        args.stocks = [
+            {'tickersymbol': stock_name, 'custom_filters': { 'minimum_dip': 3 }} \
+                for stock_name in args.stocks.split(',')
+        ]
+
+    return args
 
 
 def run():
@@ -53,7 +65,7 @@ def run():
     if args.is_order_enabled:
         PositionsController.cover_naked_positions()
 
-    stocks = VARIABLES.OPTIONS_OF_INTEREST
+    stocks = VARIABLES.OPTIONS_OF_INTEREST if not args.stocks else args.stocks
 
     if args.custom_filter_enabled:
         stocks = [stock for stock in stocks if stock.get('custom_filters')]

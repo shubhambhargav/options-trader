@@ -41,9 +41,4 @@ OPTIONS_OF_INTEREST = [
     { 'tickersymbol': 'LTI' },
     { 'tickersymbol': 'HCLTECH' },
 ]
-OPTIONS_OF_INTEREST = [
-    { 'tickersymbol': 'PVR', 'custom_filters': { 'minimum_dip': 3 } },
-    { 'tickersymbol': 'HEROMOTOCO' },
-    { 'tickersymbol': 'HCLTECH' },
-]
 CONFIG = json.loads(open('./config.json').read())
