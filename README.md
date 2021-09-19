@@ -25,12 +25,6 @@ pip install -r requirements.txt
 cp sample_config.json config.json
 ```
 
-Add the user_id in the config.json
-```
-- Get user_id from Zerodha account. Add the same to config.json/user_id
-- Log into Zerodha account using Kite in Chrome
-```
-
 To trigger the runner (only this command is required from next time onwards; after logging into Zerodha in Chrome)
 ```
 python run.py

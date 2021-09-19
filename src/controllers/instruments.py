@@ -7,6 +7,8 @@ import requests
 import pandas as pd
 from dacite import from_dict
 
+from .users import UsersController
+
 from .._variables import VARIABLES
 from ..models import InstrumentModel, EnrichedInstrumentModel, CandleModel, OptionModel, StockOfInterest
 from .technicals import TechnicalIndicatorsController
@@ -89,7 +91,7 @@ class InstrumentsController:
         response = requests.get(
             'https://kite.zerodha.com/oms/instruments/historical/%(instrument_token)s/day?user_id=%(user_id)s&oi=1&from=%(from)s&to=%(to)s' % {
                 'instrument_token': instrument_token,
-                'user_id': config['user_id'],
+                'user_id': UsersController.get_current_user().user_id,
                 'from': (datetime.now() - timedelta(days=365)).strftime('%Y-%m-%d'),
                 'to': datetime.now().strftime('%Y-%m-%d')
             },

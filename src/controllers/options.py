@@ -9,12 +9,12 @@ from dacite import from_dict
 import requests
 
 from .instruments import InstrumentsController
+from .users import UsersController
 
 from ..models import (
     OptionModel,
     OptionMarginModel,
-    EnrichedOptionModel,
-    InstrumentModel
+    EnrichedOptionModel
 )
 from .._variables import VARIABLES
 from .. import utilities as Utilities
@@ -71,7 +71,7 @@ class OptionsController:
             'squareoff': '0',
             'stoploss': '0',
             'trailing_stoploss': '0',
-            'user_id': VARIABLES.CONFIG['user_id'],
+            'user_id': UsersController.get_current_user().user_id,
             'gtt_params': '[[0,%s],[0,%s]]' % (VARIABLES.TARGET, VARIABLES.STOPLOSS)
         }
 

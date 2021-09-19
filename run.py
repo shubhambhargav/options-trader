@@ -1,6 +1,7 @@
 import json
 import emoji
 from argparse import ArgumentParser
+from os.path import isfile
 
 from numpy import isnan
 
@@ -15,7 +16,8 @@ from src.technical_indicators import add_recommendations
 
 def _refresh_config():
     config_loc = './config.json'
-    config = json.loads(open(config_loc).read())
+
+    config = json.loads(open(config_loc).read()) if isfile(config_loc) else {}
 
     cookie_dict = get_cookie_dict()
 
