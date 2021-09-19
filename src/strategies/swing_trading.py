@@ -1,7 +1,7 @@
 import requests
 
 
-class SwingBuyManager:
+class SwingTradeManager:
     def __init__(self):
         self.holdings = []
 
