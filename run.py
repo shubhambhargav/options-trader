@@ -19,9 +19,14 @@ def _refresh_config():
 
     config = json.loads(open(config_loc).read()) if isfile(config_loc) else {}
 
-    cookie_dict = get_cookie_dict(domain_name='kite.zerodha.com')
+    kite_cookie_dict = get_cookie_dict(domain_name='kite.zerodha.com')
+    tickertape_cookie_dict = get_cookie_dict(domain_name='tickertape.in')
 
-    config['auth_token'] = cookie_dict['enctoken']
+    config.update({
+        'auth_token': kite_cookie_dict['enctoken'],
+        'tickertape_csrf_token': tickertape_cookie_dict['x-csrf-token-tickertape'],
+        'tickertape_jwt_token': tickertape_cookie_dict['jwt']
+    })
 
     with open(config_loc, 'w+') as fileop:
         fileop.write(json.dumps(config, indent=4))
