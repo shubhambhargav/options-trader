@@ -1,5 +1,5 @@
 import requests
-from typing import List
+from typing import List, Optional
 
 from dacite import from_dict
 
@@ -24,3 +24,14 @@ class HoldingsController:
         holdings = response.json()['data']
 
         return [from_dict(data_class=HoldingModel, data=holding) for holding in holdings]
+
+
+    @staticmethod
+    def get_holding(tradingsymbol: str) -> Optional[HoldingModel]:
+        holdings = HoldingsController.get_holdings()
+
+        for holding in holdings:
+            if holding.tradingsymbol == tradingsymbol:
+                return holding
+
+        return None

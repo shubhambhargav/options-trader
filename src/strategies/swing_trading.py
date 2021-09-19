@@ -6,9 +6,8 @@ class SwingTradeManager:
     def __init__(self):
         self.holdings = HoldingsController.get_holdings()
 
-    def evaluate(self):
-        for holding in self.holdings:
-            print(holding)
+    def evaluate(self, tradingsymbol: str):
+        holding = HoldingsController.get_holding(tradingsymbol=tradingsymbol)
 
         screen_data = ScreensController.load_screen(screen_id='YUQEvEqw3Y3btwWe')
 
