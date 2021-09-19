@@ -1,5 +1,5 @@
 from dataclasses import dataclass, field
-from typing import Any
+from typing import Any, Optional
 
 from dataclasses_json import config, dataclass_json
 
@@ -10,7 +10,9 @@ from .base import StockOfInterest
 @dataclass
 class InstrumentModel:
     tickersymbol: str
-    volume_200DMA: float = field(metadata=config(field_name='200DMA_volume'))
+    # The following field level aliasing did not work for `from_dict` method in dacite
+    # TODO: Figure out the why and fix it
+    volume_200DMA: Optional[float] = field(metadata=config(field_name='200DMA_volume'))
     instrument_token: int
     close_price: float
     net_change: float

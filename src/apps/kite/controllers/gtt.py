@@ -1,11 +1,12 @@
 import json
 from dataclasses import asdict
+from src.apps.kite.models import positions
 from typing import List
 
 import requests
 from dacite import from_dict
 
-from ..models import GTTModel
+from ..models import GTTModel, PositionModel
 from src._variables import VARIABLES
 
 
@@ -55,3 +56,12 @@ class GTTController:
 
         raise Exception('Unexpected response code got from Kite while placing the order: %d, error: %s' % (response.status_code, response.text))
 
+    @staticmethod
+    def cover_naked_gtts(positions: List[positions.PositionModel]):
+        raise Exception('This functionality has not been implemented yet...')
+
+        gtts = GTTController.get_gtts()
+
+        position_map = {}
+
+        # TODO: Implement this
