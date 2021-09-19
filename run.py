@@ -5,8 +5,8 @@ from os.path import isfile
 
 from numpy import isnan
 
-from src.models import *
-from src.controllers import *
+from src.apps.kite.models import *
+from src.apps.kite.controllers import *
 import runtime_variables as VARIABLES
 from src import _variables as LibVariables
 from src.options import get_options_of_interest_df, select_options

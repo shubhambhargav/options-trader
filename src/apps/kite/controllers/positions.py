@@ -8,8 +8,8 @@ from dacite import from_dict
 from .gtt import GTTController
 
 from ..models import PositionModel
-from .._variables import VARIABLES
-from .. import utilities as Utilities
+import src.utilities as Utilities
+from src._variables import VARIABLES
 
 
 class NakedPositionCover:

@@ -9,10 +9,10 @@ from dacite import from_dict
 
 from .users import UsersController
 
-from .._variables import VARIABLES
+import src.utilities as Utilities
+from src._variables import VARIABLES
 from ..models import InstrumentModel, EnrichedInstrumentModel, CandleModel, OptionModel, StockOfInterest
 from .technicals import TechnicalIndicatorsController
-from .. import utilities as Utilities
 
 
 class InstrumentsController:

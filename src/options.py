@@ -1,22 +1,16 @@
 from dataclasses import asdict
 from numpy import isnan
-from src.controllers.options import OptionsController
-from src.models.instruments import InstrumentModel
+from src.apps.kite.controllers.options import OptionsController
+from src.apps.kite.models.instruments import InstrumentModel
 import pandas as pd
 from typing import List
 
 from dacite import from_dict
 
-try:
-    from ._variables import VARIABLES
-    from . import utilities as Utilities
-    from . import models
-    from .controllers.instruments import InstrumentsController
-except:
-    # In order to run the module in isolation, following is required
-    # This enables local testing
-    from _variables import VARIABLES
-    import utilities as Utilities
+from ._variables import VARIABLES
+from . import utilities as Utilities
+from src.apps.kite import models
+from .apps.kite.controllers.instruments import InstrumentsController
 
 
 def get_options_of_interest(stocks: List[models.StockOfInterest]) -> List[models.EnrichedOptionModel]:

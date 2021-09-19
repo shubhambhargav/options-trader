@@ -6,7 +6,7 @@ import requests
 from dacite import from_dict
 
 from ..models import GTTModel
-from .._variables import VARIABLES
+from src._variables import VARIABLES
 
 
 class GTTController:

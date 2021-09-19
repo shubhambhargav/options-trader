@@ -1,7 +1,7 @@
 import requests
 from dacite import from_dict
 
-from .._variables import VARIABLES
+from src._variables import VARIABLES
 from ..models import UserModel
 
 

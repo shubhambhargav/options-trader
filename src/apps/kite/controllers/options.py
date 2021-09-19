@@ -1,8 +1,8 @@
 from collections import defaultdict
 from dataclasses import asdict
 import json
-from src.models.base import StockOfInterest
-from src.controllers.positions import PositionsController
+from src.apps.kite.models.base import StockOfInterest
+from src.apps.kite.controllers.positions import PositionsController
 from typing import List
 from dacite import from_dict
 
@@ -16,8 +16,8 @@ from ..models import (
     OptionMarginModel,
     EnrichedOptionModel
 )
-from .._variables import VARIABLES
-from .. import utilities as Utilities
+import src.utilities as Utilities
+from src._variables import VARIABLES
 
 
 class OptionsController:
