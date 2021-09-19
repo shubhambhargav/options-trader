@@ -19,7 +19,7 @@ def _refresh_config():
 
     config = json.loads(open(config_loc).read()) if isfile(config_loc) else {}
 
-    cookie_dict = get_cookie_dict()
+    cookie_dict = get_cookie_dict(domain_name='kite.zerodha.com')
 
     config['auth_token'] = cookie_dict['enctoken']
 
