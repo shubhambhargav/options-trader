@@ -8,7 +8,6 @@ from src._variables import VARIABLES
 from ..models import HoldingModel
 
 
-@staticmethod
 class HoldingsController:
     @staticmethod
     def get_holdings() -> List[HoldingModel]:

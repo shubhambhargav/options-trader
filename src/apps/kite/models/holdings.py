@@ -3,8 +3,8 @@ from dataclasses import dataclass
 
 @dataclass
 class HoldingModel:
-    authorized_date: str
-    authorized_quantity: int
+    authorised_date: str
+    authorised_quantity: int
     average_price: float
     close_price: float
     collateral_quantity: int
@@ -21,7 +21,7 @@ class HoldingModel:
     price: float
     product: str
     quantity: int
-    realized_quantity: int
+    realised_quantity: int
     t1_quantity: int
     tradingsymbol: str
     used_quantity: int

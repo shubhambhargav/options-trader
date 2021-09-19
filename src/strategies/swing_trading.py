@@ -1,13 +1,14 @@
-import requests
+from src.apps.kite.controllers import holdings
+from src.apps.kite.controllers.holdings import HoldingsController
 
 
 class SwingTradeManager:
     def __init__(self):
-        self.holdings = []
+        self.holdings = HoldingsController.get_holdings()
 
     def evaluate(self):
-        pass
+        for holding in self.holdings:
+            print(holding)
 
     def compare(self):
         pass
-
