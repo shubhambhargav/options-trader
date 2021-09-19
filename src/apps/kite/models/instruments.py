@@ -1,12 +1,16 @@
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import Any
+
+from dataclasses_json import config, dataclass_json
 
 from .base import StockOfInterest
 
 
+@dataclass_json
 @dataclass
 class InstrumentModel:
     tickersymbol: str
+    volume_200DMA: float = field(metadata=config(field_name='200DMA_volume'))
     instrument_token: int
     close_price: float
     net_change: float
