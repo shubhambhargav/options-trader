@@ -6,8 +6,9 @@ from typing import List
 import requests
 from dacite import from_dict
 
-from ..models import GTTModel, PositionModel
+from ..models import GTTModel
 from src._variables import VARIABLES
+from src.logger import LOGGER
 
 
 class GTTController:
@@ -50,7 +51,7 @@ class GTTController:
         )
 
         if response.status_code == 200:
-            print('Successfully placed the order for %s' % gtt.condition.tradingsymbol)
+            LOGGER.info('Successfully placed the order for %s' % gtt.condition.tradingsymbol)
 
             return
 

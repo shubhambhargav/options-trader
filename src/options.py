@@ -10,6 +10,7 @@ from dacite import from_dict
 from ._variables import VARIABLES
 from . import utilities as Utilities
 from src.apps.kite import models
+from src.logger import LOGGER
 from .apps.kite.controllers.instruments import InstrumentsController
 
 
@@ -37,7 +38,7 @@ def get_options_of_interest(stocks: List[models.StockOfInterest]) -> List[models
 
         all_options += options
 
-        print('Processed for %s' % stock.tickersymbol)
+        LOGGER.debug('Processed for %s' % stock.tickersymbol)
 
     all_options = list(filter(
         lambda elem: elem.profit_percentage >= VARIABLES.MINIMUM_PROFIT_PERCENTAGE,
@@ -83,6 +84,6 @@ def select_options(options: list, selection: str):
         expected_info['profit'] += option['profit']
         expected_info['margin__total'] += option['margin']['total']
 
-    print('Expected profit: %d, margin: %d' % (expected_info['profit'], expected_info['margin__total']))
+    LOGGER.info('Expected profit: %d, margin: %d' % (expected_info['profit'], expected_info['margin__total']))
 
     return selected_options

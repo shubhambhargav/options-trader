@@ -12,6 +12,7 @@ from ..models import PositionModel
 from .orders import OrdersController
 import src.utilities as Utilities
 from src._variables import VARIABLES
+from src.logger import LOGGER
 
 
 class NakedPositionCover:
@@ -100,7 +101,7 @@ class PositionsController:
             }
 
             if tradingsymbol in gtt_tradingsymbol:
-                print('Found existing future for: %s, skipping...' % tradingsymbol)
+                LOGGER.debug('Found existing future for: %s, skipping...' % tradingsymbol)
 
                 continue
 
@@ -123,3 +124,5 @@ class PositionsController:
         }
 
         OrdersController.place_order(order=from_dict(data_class=PlaceOrderModel, data=order))
+
+        LOGGER.info('Successfully placed exit order for %s...' % position.tradingsymbol)

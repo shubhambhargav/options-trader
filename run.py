@@ -12,6 +12,7 @@ from src import _variables as LibVariables
 from src.options import get_options_of_interest_df, select_options
 from src.external.chrome import get_cookie_dict
 from src.technical_indicators import add_recommendations
+from src.logger import LOGGER
 
 
 def _refresh_config():
@@ -71,7 +72,7 @@ def run():
 
     args = _get_args()
 
-    print('Total profit expected till now: %d' % PositionsController.get_pnl_month_end())
+    LOGGER.info('Total profit expected till now: %d' % PositionsController.get_pnl_month_end())
 
     if args.is_order_enabled:
         PositionsController.cover_naked_positions()
@@ -87,16 +88,14 @@ def run():
                 continue
 
             if order_dict.get(position.tradingsymbol):
-                print('Exit order existing for position: %s, skipping...' % position.tradingsymbol)
+                LOGGER.debug('Exit order existing for position: %s, skipping...' % position.tradingsymbol)
 
                 continue
 
             if position.pnl_percentage < 90:
-                print('Exiting %s option skipped; expected profit: 90 percentage, found: %.2f' % (position.tradingsymbol, position.pnl_percentage))
+                LOGGER.debug('Exiting %s option skipped; expected profit: 90 percentage, found: %.2f' % (position.tradingsymbol, position.pnl_percentage))
 
             PositionsController.exit_position(position=position)
-
-            print('Exit order to be placed for %s' % position.tradingsymbol)
 
     stocks = VARIABLES.OPTIONS_OF_INTEREST if not args.stocks else args.stocks
 
@@ -106,7 +105,7 @@ def run():
     options_df = get_options_of_interest_df(stocks=stocks)
 
     if len(options_df) == 0:
-        print('No eligible options found...')
+        LOGGER.info('No eligible options found...')
 
         return
 

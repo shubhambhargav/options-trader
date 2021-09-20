@@ -18,6 +18,7 @@ from ..models import (
 )
 import src.utilities as Utilities
 from src._variables import VARIABLES
+from src.logger import LOGGER
 
 
 class OptionsController:
@@ -47,12 +48,12 @@ class OptionsController:
         expected_trade_price = option.last_price
 
         if option_last_price > expected_trade_price:
-            print(
+            LOGGER.debug(
                 'Increasing the trade price for %s. Previous price: %s, new price: %s' % (
                     option.name, expected_trade_price, option_last_price
                 )
             )
-            print('New expected profit: %s' % (expected_trade_price * int(option.lot_size)))
+            LOGGER.debug('New expected profit: %s' % (expected_trade_price * int(option.lot_size)))
 
             expected_trade_price = option_last_price
 
@@ -87,11 +88,11 @@ class OptionsController:
         )
 
         if response.status_code == 200:
-            print('Successfully placed the order for %s' % option.name)
+            LOGGER.info('Successfully placed the order for %s' % option.name)
 
             return
 
-        print('Unexpected response code got from Kite while placing the order: %d, error: %s' % (response.status_code, response.text))
+        LOGGER.error('Unexpected response code got from Kite while placing the order: %d, error: %s' % (response.status_code, response.text))
 
     @staticmethod
     def get_option_margin_bulk(options: List[OptionModel]) -> List[OptionMarginModel]:
