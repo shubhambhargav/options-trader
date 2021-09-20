@@ -22,7 +22,6 @@ source options-trader/bin/activate
 Install requirements
 ```
 pip install -r requirements.txt
-cp sample_config.json config.json
 ```
 
 To trigger the runner (only this command is required from next time onwards; after logging into Zerodha in Chrome)
