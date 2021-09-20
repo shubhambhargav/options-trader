@@ -1,7 +1,5 @@
-import json
 import emoji
 from argparse import ArgumentParser
-from os.path import isfile
 
 from numpy import isnan
 
@@ -9,7 +7,6 @@ from src.apps.kite.models import *
 from src.apps.kite.controllers import *
 import runtime_variables as VARIABLES
 from src.options import get_options_of_interest_df, select_options
-from src.external.chrome import get_cookie_dict
 from src.technical_indicators import add_recommendations
 from src.logger import LOGGER
 

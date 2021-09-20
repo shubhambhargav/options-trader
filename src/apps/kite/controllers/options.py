@@ -17,11 +17,12 @@ from ..models import (
     EnrichedOptionModel
 )
 import src.utilities as Utilities
-from src._variables import VARIABLES
 from src.apps.settings.controllers import ConfigController
 from src.logger import LOGGER
 
 KITE_AUTH_TOKEN = ConfigController.get_config().kite_auth_token
+OPTIONS_SELLING_TARGET = -90  # in percentage i.e. recovering the entire put amount
+OPTIONS_SELLING_STOPLOSS = 250  # in percentage i.e. only holding till 250 % drop
 
 
 class OptionsController:
@@ -76,7 +77,7 @@ class OptionsController:
             'stoploss': '0',
             'trailing_stoploss': '0',
             'user_id': UsersController.get_current_user().user_id,
-            'gtt_params': '[[0,%s],[0,%s]]' % (VARIABLES.TARGET, VARIABLES.STOPLOSS)
+            'gtt_params': '[[0,%s],[0,%s]]' % (OPTIONS_SELLING_TARGET, OPTIONS_SELLING_STOPLOSS)
         }
 
         headers = {

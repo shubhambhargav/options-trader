@@ -7,11 +7,13 @@ from typing import List
 
 from dacite import from_dict
 
-from ._variables import VARIABLES
 from . import utilities as Utilities
 from src.apps.kite import models
 from src.logger import LOGGER
 from .apps.kite.controllers.instruments import InstrumentsController
+
+OPTIONS_MINIMUM_PROFIT_PERCENTAGE = 2  # in percentage
+OPTIONS_MAX_TIME_TO_EXPIRY = 40  # in days
 
 
 def get_options_of_interest(stocks: List[models.StockOfInterest]) -> List[models.EnrichedOptionModel]:
@@ -30,7 +32,7 @@ def get_options_of_interest(stocks: List[models.StockOfInterest]) -> List[models
             #   - only looking for options within next X numeber of days
             lambda option: option.instrument_type == 'PE' \
                 and option.strike < instrument.last_price \
-                and option.time_to_expiry_in_days < VARIABLES.MAX_TIME_TO_EXPIRY \
+                and option.time_to_expiry_in_days < OPTIONS_MAX_TIME_TO_EXPIRY \
                 and stock.custom_filters.minimum_dip < ((instrument.last_price - option.strike) / instrument.last_price * 100) < stock.custom_filters.maximum_dip,
             options
         ))
@@ -41,7 +43,7 @@ def get_options_of_interest(stocks: List[models.StockOfInterest]) -> List[models
         LOGGER.debug('Processed for %s' % stock.tickersymbol)
 
     all_options = list(filter(
-        lambda elem: elem.profit_percentage >= VARIABLES.MINIMUM_PROFIT_PERCENTAGE,
+        lambda elem: elem.profit_percentage >= OPTIONS_MINIMUM_PROFIT_PERCENTAGE,
         sorted(
             all_options, key=lambda x: x.profit_percentage + x.percentage_dip, reverse=True
         )
