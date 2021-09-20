@@ -8,33 +8,10 @@ from numpy import isnan
 from src.apps.kite.models import *
 from src.apps.kite.controllers import *
 import runtime_variables as VARIABLES
-from src import _variables as LibVariables
 from src.options import get_options_of_interest_df, select_options
 from src.external.chrome import get_cookie_dict
 from src.technical_indicators import add_recommendations
 from src.logger import LOGGER
-
-
-def _refresh_config():
-    config_loc = './config.json'
-
-    config = json.loads(open(config_loc).read()) if isfile(config_loc) else {}
-
-    kite_cookie_dict = get_cookie_dict(domain_name='kite.zerodha.com')
-    tickertape_cookie_dict = get_cookie_dict(domain_name='tickertape.in')
-
-    config.update({
-        'auth_token': kite_cookie_dict['enctoken'],
-        'tickertape_csrf_token': tickertape_cookie_dict['x-csrf-token-tickertape'],
-        'tickertape_jwt_token': tickertape_cookie_dict['jwt']
-    })
-
-    with open(config_loc, 'w+') as fileop:
-        fileop.write(json.dumps(config, indent=4))
-
-    # Following reload is required to ensure that the new auth token is reloaded
-    # to the underlying library as well
-    LibVariables.reload()
 
 
 def _get_args():
@@ -68,8 +45,6 @@ def _get_args():
 
 
 def run():
-    _refresh_config()
-
     args = _get_args()
 
     LOGGER.info('Total profit expected till now: %d' % PositionsController.get_pnl_month_end())

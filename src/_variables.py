@@ -1,5 +1,3 @@
-import json
-from os.path import isfile
 
 
 # Singleton class
@@ -11,8 +9,3 @@ class VARIABLES:
     TARGET = -90  # in percentage i.e. recovering the entire put amount
     STOPLOSS = 250 # in percentage i.e. only holding till 250 % drop
     MINIMUM_MARGIN_FOR_ANY_PURCHASE = 50000  # in INR
-    CONFIG = json.loads(open('./config.json').read()) if isfile('./config.json') else {}
-
-
-def reload():
-    VARIABLES.CONFIG = json.loads(open('./config.json').read())

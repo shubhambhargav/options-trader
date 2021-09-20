@@ -1,11 +1,14 @@
+from src.apps.kite.controllers.gtt import KITE_AUTH_TOKEN
 import requests
 from typing import List, Optional
 
 from dacite import from_dict
 
-from src._variables import VARIABLES
+from src.apps.settings.controllers import ConfigController
 
 from ..models import HoldingModel
+
+KITE_AUTH_TOKEN = ConfigController.get_config().kite_auth_token
 
 
 class HoldingsController:
@@ -14,7 +17,7 @@ class HoldingsController:
         response = requests.get(
             'https://kite.zerodha.com/oms/portfolio/holdings',
             headers={
-                'Authorization': f"enctoken {VARIABLES.CONFIG['auth_token']}"
+                'Authorization': f'enctoken {KITE_AUTH_TOKEN}'
             }
         )
 

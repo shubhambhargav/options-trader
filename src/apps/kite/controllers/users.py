@@ -1,7 +1,7 @@
 import requests
 from dacite import from_dict
 
-from src._variables import VARIABLES
+from src.apps.settings.controllers import ConfigController
 from ..models import UserModel
 
 
@@ -11,7 +11,7 @@ class UsersController:
         response = requests.get(
             'https://kite.zerodha.com/oms/user/profile/full',
             headers={
-                'Authorization': f"enctoken {VARIABLES.CONFIG['auth_token']}"
+                'Authorization': f'enctoken {ConfigController.get_config().kite_auth_token}'
             }
         )
 

@@ -7,15 +7,17 @@ import requests
 from dacite import from_dict
 
 from ..models import GTTModel
-from src._variables import VARIABLES
+from src.apps.settings.controllers import ConfigController
 from src.logger import LOGGER
+
+KITE_AUTH_TOKEN = ConfigController.get_config().kite_auth_token
 
 
 class GTTController:
     @staticmethod
     def get_gtts() -> List[GTTModel]:
         headers = {
-            'Authorization': f"enctoken {VARIABLES.CONFIG['auth_token']}"
+            'Authorization': f'enctoken {KITE_AUTH_TOKEN}'
         }
 
         response = requests.get(
@@ -35,7 +37,7 @@ class GTTController:
 
         headers = {
             'content-type': 'application/x-www-form-urlencoded',
-            'Authorization': f"enctoken {VARIABLES.CONFIG['auth_token']}"
+            'Authorization': f'enctoken {KITE_AUTH_TOKEN}'
         }
 
         gtt_payload = asdict(gtt)

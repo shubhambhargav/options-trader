@@ -4,10 +4,12 @@ from typing import List
 import requests
 from dacite import from_dict
 
-from src._variables import VARIABLES
+from src.apps.settings.controllers import ConfigController
 
 from ..models import OrderModel, PlaceOrderModel
 from .users import UsersController
+
+KITE_AUTH_TOKEN = ConfigController.get_config().kite_auth_token
 
 
 class OrdersController:
@@ -16,7 +18,7 @@ class OrdersController:
         response = requests.get(
             'https://kite.zerodha.com/oms/orders',
             headers={
-                'Authorization': f"enctoken {VARIABLES.CONFIG['auth_token']}"
+                'Authorization': f'enctoken {KITE_AUTH_TOKEN}'
             }
         )
 
@@ -37,7 +39,7 @@ class OrdersController:
         response = requests.post(
             'https://kite.zerodha.com/oms/orders/regular',
             headers={
-                'Authorization': f"enctoken {VARIABLES.CONFIG['auth_token']}",
+                'Authorization': f'enctoken {KITE_AUTH_TOKEN}',
                 'Content-Type': 'application/x-www-form-urlencoded'
             },
             data=asdict(order)

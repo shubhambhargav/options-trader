@@ -1,6 +1,3 @@
-import json
-from os.path import isfile
-
 # Runtime variables
 OPTIONS_OF_INTEREST = [
     # Public sector
@@ -42,4 +39,3 @@ OPTIONS_OF_INTEREST = [
     { 'tickersymbol': 'LTI' },
     { 'tickersymbol': 'HCLTECH' },
 ]
-CONFIG = json.loads(open('./config.json').read()) if isfile('./config.json') else {}

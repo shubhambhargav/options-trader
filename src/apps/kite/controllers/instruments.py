@@ -10,9 +10,12 @@ from dacite import from_dict
 from .users import UsersController
 
 import src.utilities as Utilities
-from src._variables import VARIABLES
+from src.apps.settings.controllers import ConfigController
+
 from ..models import InstrumentModel, EnrichedInstrumentModel, CandleModel, OptionModel, StockOfInterest
 from .technicals import TechnicalIndicatorsController
+
+KITE_AUTH_TOKEN = ConfigController.get_config().kite_auth_token
 
 
 class InstrumentsController:
@@ -72,7 +75,6 @@ class InstrumentsController:
     @staticmethod
     def get_instrument_candles(tickersymbol: str) -> List[CandleModel]:
         insturment_token_dict = InstrumentsController.get_instrument_token_dict()
-        config = VARIABLES.CONFIG
 
         # Following is documented here: https://kite.trade/docs/connect/v3/historical/
         response_headers = ['timestamp', 'open', 'high', 'low', 'close', 'volume']
@@ -92,7 +94,7 @@ class InstrumentsController:
                 'to': datetime.now().strftime('%Y-%m-%d')
             },
             headers={
-                'Authorization': f"enctoken {VARIABLES.CONFIG['auth_token']}"
+                'Authorization': f'enctoken {KITE_AUTH_TOKEN}'
             }
         )
 

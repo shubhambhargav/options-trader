@@ -18,7 +18,10 @@ from ..models import (
 )
 import src.utilities as Utilities
 from src._variables import VARIABLES
+from src.apps.settings.controllers import ConfigController
 from src.logger import LOGGER
+
+KITE_AUTH_TOKEN = ConfigController.get_config().kite_auth_token
 
 
 class OptionsController:
@@ -78,7 +81,7 @@ class OptionsController:
 
         headers = {
             'content-type': 'application/x-www-form-urlencoded',
-            'Authorization': f"enctoken {VARIABLES.CONFIG['auth_token']}"
+            'Authorization': f'enctoken {KITE_AUTH_TOKEN}'
         }
 
         response = requests.post(
@@ -119,7 +122,7 @@ class OptionsController:
                 'https://kite.zerodha.com/oms/margins/orders',
                 headers={
                     'Content-Type': 'application/json',
-                    'Authorization': f"enctoken {VARIABLES.CONFIG['auth_token']}"
+                    'Authorization': f'enctoken {KITE_AUTH_TOKEN}'
                 },
                 data=json.dumps(chunk)
             )

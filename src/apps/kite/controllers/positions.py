@@ -11,8 +11,10 @@ from .gtt import GTTController
 from ..models import PositionModel
 from .orders import OrdersController
 import src.utilities as Utilities
-from src._variables import VARIABLES
+from src.apps.settings.controllers import ConfigController
 from src.logger import LOGGER
+
+KITE_AUTH_TOKEN = ConfigController.get_config().kite_auth_token
 
 
 class NakedPositionCover:
@@ -58,7 +60,7 @@ class PositionsController:
             'https://kite.zerodha.com/oms/portfolio/positions',
             headers={
                 'Content-Type': 'application/json',
-                'Authorization': f"enctoken {VARIABLES.CONFIG['auth_token']}"
+                'Authorization': f'enctoken {KITE_AUTH_TOKEN}'
             }
         )
 

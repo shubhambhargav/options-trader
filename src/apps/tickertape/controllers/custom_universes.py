@@ -3,7 +3,7 @@ from typing import List
 import requests
 from dacite import from_dict
 
-from src._variables import VARIABLES
+from src.apps.settings.controllers import ConfigController
 
 from ..models import CustomUniverseModel
 
@@ -11,11 +11,13 @@ from ..models import CustomUniverseModel
 class CustomUniversesController:
     @staticmethod
     def get_custom_universes() -> List[CustomUniverseModel]:
+        config = ConfigController.get_config()
+
         response = requests.get(
             'https://api.tickertape.in/screener/customUniverses',
             headers={
-                'Cookie': f"jwt={VARIABLES.CONFIG['tickertape_jwt_token']};",
-                'x-csrf-token': VARIABLES.CONFIG['tickertape_csrf_token']
+                'Cookie': f'jwt={config.tickertape_jwt_token};',
+                'x-csrf-token': config.tickertape_csrf_token
             }
         )
 
