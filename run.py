@@ -14,6 +14,10 @@ from src.logger import LOGGER
 def _get_args():
     parser = ArgumentParser(description='Get options of interest...')
     parser.add_argument(
+        '--strategy', dest='strategy', choices=['swing_trading', 'bluechip_options_selling'],
+        help='Strategy to execute'
+    )
+    parser.add_argument(
         '--custom-filtered', dest='custom_filter_enabled', action='store_true',
         default=False, help='Only use custom filtered stocks...'
     )
@@ -27,7 +31,7 @@ def _get_args():
     )
     parser.add_argument(
         '--exit-option-profit-positions', dest='is_option_position_exit_enabled', action='store_true',
-        default=False, help='Exists options positions with >= 90% profit'
+        default=False, help='Exists options positions with more than 90 percent profit'
     )
 
     args = parser.parse_args()
