@@ -1,4 +1,5 @@
 from os import stat
+from src.apps.kite.models.orders import PlaceOrderModel
 from typing import List
 
 import requests
@@ -7,7 +8,7 @@ from dacite import from_dict
 
 from .gtt import GTTController
 
-from ..models import PositionModel, OrderModel
+from ..models import PositionModel
 from .orders import OrdersController
 import src.utilities as Utilities
 from src._variables import VARIABLES
@@ -121,4 +122,4 @@ class PositionsController:
                 if position.quantity < 0 else Utilities.round_nearest(number=position.last_price - 0.09, unit=0.05)
         }
 
-        OrdersController.place_order(order=from_dict(data_class=OrderModel, data=order))
+        OrdersController.place_order(order=from_dict(data_class=PlaceOrderModel, data=order))

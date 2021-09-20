@@ -92,7 +92,7 @@ def run():
                 continue
 
             if position.pnl_percentage < 90:
-                print('Exiting %s option skipped; expected profit: 90 percentage, found: %s' % (position.tradingsymbol, position.pnl_percentage))
+                print('Exiting %s option skipped; expected profit: 90 percentage, found: %.2f' % (position.tradingsymbol, position.pnl_percentage))
 
             PositionsController.exit_position(position=position)
 

@@ -40,7 +40,7 @@ class OrdersController:
                 'Authorization': f"enctoken {VARIABLES.CONFIG['auth_token']}",
                 'Content-Type': 'application/x-www-form-urlencoded'
             },
-            data=asdict(OrderModel)
+            data=asdict(order)
         )
 
         if response.status_code != 200:
