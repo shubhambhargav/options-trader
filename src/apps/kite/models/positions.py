@@ -33,15 +33,20 @@ class PositionModel:
     tradingsymbol: str
     unrealised: float
     value: float
+    pnl_percentage: float = 0
     pnl_month_end: float = 0
     underlying_instrument: str = ''
 
     def __post_init__(self):
         self.underlying_instrument = re.search('[A-Z]+', self.tradingsymbol)[0]
+        self.pnl_percentage = (self.pnl / abs(self.average_price * self.quantity)) * 100
 
         # TODO: Add logic for CE type options as well
         if self.tradingsymbol.endswith('PE') and self.quantity < 0:
             self.pnl_month_end = abs(self.quantity * self.average_price)
         else:
             self.pnl_month_end = self.pnl
+
+    def is_option(self):
+        return True if self.tradingsymbol.endswith(('PE', 'CE')) else False
 

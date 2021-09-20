@@ -50,6 +50,10 @@ def _get_args():
         '--stocks', dest='stocks', type=str,
         help='List of stocks to process, defaults minimum drop to 3'
     )
+    parser.add_argument(
+        '--exit-option-profit-positions', dest='is_option_position_exit_enabled', action='store_true',
+        default=False, help='Exists options positions with >= 90% profit'
+    )
 
     args = parser.parse_args()
 
@@ -71,6 +75,28 @@ def run():
 
     if args.is_order_enabled:
         PositionsController.cover_naked_positions()
+
+    if args.is_order_enabled and args.is_option_position_exit_enabled:
+        positions = PositionsController.get_positions()
+        orders = OrdersController.get_orders()
+
+        order_dict = dict((order.tradingsymbol, order) for order in orders)
+
+        for position in positions:
+            if not position.is_option():
+                continue
+
+            if order_dict.get(position.tradingsymbol):
+                print('Exit order existing for position: %s, skipping...' % position.tradingsymbol)
+
+                continue
+
+            if position.pnl_percentage < 90:
+                print('Exiting %s option skipped; expected profit: 90 percentage, found: %s' % (position.tradingsymbol, position.pnl_percentage))
+
+            PositionsController.exit_position(position=position)
+
+            print('Exit order to be placed for %s' % position.tradingsymbol)
 
     stocks = VARIABLES.OPTIONS_OF_INTEREST if not args.stocks else args.stocks
 

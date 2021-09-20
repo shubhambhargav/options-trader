@@ -7,7 +7,8 @@ from dacite import from_dict
 
 from .gtt import GTTController
 
-from ..models import PositionModel
+from ..models import PositionModel, OrderModel
+from .orders import OrdersController
 import src.utilities as Utilities
 from src._variables import VARIABLES
 
@@ -107,3 +108,17 @@ class PositionsController:
                 future_symbol=tradingsymbol,
                 option_meta=option_meta
             )
+
+    @staticmethod
+    def exit_position(position: PositionModel):
+        order = {
+            'tradingsymbol': position.tradingsymbol,
+            'transaction_type': 'BUY' if position.quantity < 0 else 'SELL',
+            'quantity': abs(position.quantity),
+            # Following is being done to get additional profit on top of market and close at a slightly
+            # higher / lower price point during the day
+            'price': Utilities.round_nearest(number=position.last_price + 0.09, unit=0.05) \
+                if position.quantity < 0 else Utilities.round_nearest(number=position.last_price - 0.09, unit=0.05)
+        }
+
+        OrdersController.place_order(order=from_dict(data_class=OrderModel, data=order))
