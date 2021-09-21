@@ -165,9 +165,14 @@ class OptionsController:
         enriched_options = []
         margin_data = OptionsController.get_option_margin_bulk(options=options)
         positions = PositionsController.get_positions()
+        orders = OrdersController.get_orders()
 
         instrument_positions = defaultdict(list)
         option_positions = defaultdict()
+        option_orders = defaultdict(list)
+
+        for order in orders:
+            option_orders[order.tradingsymbol] = order
 
         for position in positions:
             instrument_positions[position.underlying_instrument].append(position)
@@ -186,6 +191,7 @@ class OptionsController:
             option = EnrichedOptionModel(**asdict(option))
 
             option.position = option_positions.get(option.tradingsymbol)
+            option.orders = option_orders.get(option.tradingsymbol)
             option.instrument_positions = instrument_positions.get(option.underlying_instrument)
             option.margin = margin_data[iteration]
             option.profit_percentage = (option.profit / option.margin.total) * 100

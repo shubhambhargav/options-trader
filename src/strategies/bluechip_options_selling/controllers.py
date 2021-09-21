@@ -142,14 +142,16 @@ class BluechipOptionsSeller:
         copied_options_df.underlying_instrument[copied_options_df.instrument_positions.notnull()] = copied_options_df.underlying_instrument.apply(
             lambda x: emoji.emojize(x + ' :white_check_mark:', use_aliases=True)
         )
-        options_df['existing'] = 'NA'
+        copied_options_df['existing'] = 'NA'
+
+        copied_options_df.existing[copied_options_df.orders.notnull()] = copied_options_df.orders.apply(
+            lambda x: emoji.emojize(':package:') if x else 'NA'
+        )
 
         if 'position__quantity' in list(copied_options_df.columns):
             copied_options_df['existing'] = (copied_options_df.position__quantity / copied_options_df.lot_size).apply(
                 lambda x: 'NA' if isnan(x) else emoji.emojize(str(abs(x)) + ' :white_check_mark:', use_aliases=True)
             )
-        else:
-            copied_options_df['existing'] = 'NA'
 
         copied_options_df.rename(
             columns={
@@ -203,6 +205,8 @@ class BluechipOptionsSeller:
 
     def run(self):
         config = self.get_config()
+
+        LOGGER.info('Total profit expected till now: %d' % PositionsController.get_pnl_month_end())
 
         if config.is_order_enabled:
             PositionsController.cover_naked_positions()

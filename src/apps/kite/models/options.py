@@ -1,4 +1,5 @@
 from dataclasses import dataclass
+from src.apps.kite.models.gtt import OrderModel
 from typing import Any, List, Optional, Union
 from datetime import datetime
 
@@ -72,6 +73,7 @@ class EnrichedOptionModel(OptionModel):
     sequence_id: int = 0
     profit_percentage: float = 0
     position: Optional[PositionModel] = DefaultVal(PositionModel)
+    orders: Optional[List[OrderModel]] = DefaultVal(List[OrderModel])
     # TODO: Figure out a way to remove 'str' from the following, currently dataframe conversion transforms
     #       the underlying value to a stringified (not exactly) type which is not converatable back to an array
     instrument_positions:  Optional[Union[List[PositionModel], str]] = DefaultVal(List[PositionModel])
