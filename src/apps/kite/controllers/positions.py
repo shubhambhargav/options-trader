@@ -121,9 +121,13 @@ class PositionsController:
             'quantity': abs(position.quantity),
             # Following is being done to get additional profit on top of market and close at a slightly
             # higher / lower price point during the day
-            'price': Utilities.round_nearest(number=position.last_price + 0.09, unit=0.05) \
-                if position.quantity < 0 else Utilities.round_nearest(number=position.last_price - 0.09, unit=0.05)
+            'price': Utilities.round_nearest(number=position.last_price - 0.05, unit=0.05) \
+                if position.quantity < 0 else Utilities.round_nearest(number=position.last_price + 0.05, unit=0.05)
         }
+
+        # Following takes care of an edge case where the price is set to zero
+        if order['price'] == 0:
+            order['price'] = 0.05
 
         OrdersController.place_order(order=from_dict(data_class=PlaceOrderModel, data=order))
 
