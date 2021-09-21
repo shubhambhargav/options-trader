@@ -74,5 +74,5 @@ class EnrichedOptionModel(OptionModel):
     position: Optional[PositionModel] = DefaultVal(PositionModel)
     # TODO: Figure out a way to remove 'str' from the following, currently dataframe conversion transforms
     #       the underlying value to a stringified (not exactly) type which is not converatable back to an array
-    instrument_positions:  Union[List[PositionModel], str] = DefaultVal(List[PositionModel])
+    instrument_positions:  Optional[Union[List[PositionModel], str]] = DefaultVal(List[PositionModel])
     enriched_instrument: EnrichedInstrumentModel = DefaultVal(EnrichedInstrumentModel)

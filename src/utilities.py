@@ -79,15 +79,6 @@ def unflatten_dict(data: dict, sep: str = '__') -> dict:
     return tranformed_data
 
 
-def dict_array_to_df(dict_array: list):
-    resp_data = []
-
-    for dict_value in dict_array:
-        resp_data.append(flatten_dict(data=dict_value))
-
-    return resp_data
-
-
 def tradingsymbol_to_meta(tradingsymbol: str):
     metadata = TRADINGSYMBOL_META.match(tradingsymbol)
 

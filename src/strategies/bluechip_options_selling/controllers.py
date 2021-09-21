@@ -101,8 +101,6 @@ class BluechipOptionsSeller:
         all_options = []
 
         for stock in stocks:
-            stock = from_dict(data_class=StockOfInterest, data=stock)
-
             instrument = InstrumentsController.get_instrument(tickersymbol=stock.tickersymbol)
             options = InstrumentsController.get_options_chain(instrument=instrument)
 
@@ -150,6 +148,8 @@ class BluechipOptionsSeller:
             copied_options_df['existing'] = (copied_options_df.position__quantity / copied_options_df.lot_size).apply(
                 lambda x: 'NA' if isnan(x) else emoji.emojize(str(abs(x)) + ' :white_check_mark:', use_aliases=True)
             )
+        else:
+            copied_options_df['existing'] = 'NA'
 
         copied_options_df.rename(
             columns={
@@ -171,7 +171,7 @@ class BluechipOptionsSeller:
             .set_index(['instrument', 'instrument_price', 'expiry', 'close_last_by_min', 'close_last_by_avg', 'last_buy_signal'])
 
         columns = [
-            'seq', 'recommendation', 'existing', '%_dip', 'profit', '%_profit', 'strike', 'last_price', 'margin', 'backup_money'
+            'seq', 'existing', '%_dip', 'profit', '%_profit', 'strike', 'last_price', 'margin', 'backup_money'
         ]
 
         print(indexed_options[columns].to_string())
@@ -196,7 +196,7 @@ class BluechipOptionsSeller:
             expected_info['profit'] += option['profit']
             expected_info['margin'] += option['margin']['total']
 
-        LOGGER.info('Expected profit: %d, margin: %d' % (expected_info['profit'], expected_info['margin__total']))
+        LOGGER.info('Expected profit: %d, margin: %d' % (expected_info['profit'], expected_info['margin']))
 
         for option in selected_options:
             OptionsController.sell_option(option=option)
@@ -220,7 +220,3 @@ class BluechipOptionsSeller:
 
         if config.is_order_enabled:
             self._trade_options(options_df=options_df)
-
-
-
-
