@@ -2,7 +2,7 @@ from collections import defaultdict
 from dataclasses import asdict
 import json
 from src.apps.kite.models.base import StockOfInterest
-from src.apps.kite.controllers.positions import PositionsController
+from src.apps.kite.controllers.positions import PositionsController, OrdersController
 from typing import List
 from dacite import from_dict
 
@@ -134,6 +134,31 @@ class OptionsController:
             return_data += response.json()['data']
 
         return [from_dict(data_class=OptionMarginModel, data=option_margin) for option_margin in return_data]
+
+    @staticmethod
+    def exit_profited_options(profit_percentage_threshold: float):
+        positions = PositionsController.get_positions()
+        orders = OrdersController.get_orders()
+
+        order_dict = dict((order.tradingsymbol, order) for order in orders)
+
+        for position in positions:
+            if not position.is_option():
+                continue
+
+            if order_dict.get(position.tradingsymbol):
+                LOGGER.debug('Exit order existing for position: %s, skipping...' % position.tradingsymbol)
+
+                continue
+
+            if position.pnl_percentage < profit_percentage_threshold:
+                LOGGER.debug('Exiting %s option skipped; expected profit: %s percentage, found: %.2f' % (
+                    position.tradingsymbol, profit_percentage_threshold, position.pnl_percentage
+                ))
+
+                continue
+
+            PositionsController.exit_position(position=position)
 
     @staticmethod
     def enrich_options(options: List[OptionModel]) -> List[EnrichedOptionModel]:
