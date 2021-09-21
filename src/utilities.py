@@ -90,6 +90,8 @@ def tradingsymbol_to_meta(tradingsymbol: str):
     if 'PE' in metadata_dict['type']:
         metadata_dict['option_price'] = float(metadata_dict['type'].replace('PE', ''))
         metadata_dict['type'] = 'OPT'
+    elif 'FUT' in metadata_dict['type']:
+        metadata_dict['type'] = 'FUT'
 
     return metadata_dict
 

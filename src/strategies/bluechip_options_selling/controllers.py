@@ -10,7 +10,9 @@ from dacite import from_dict
 from .models import ConfigModel
 import src.utilities as Utilities
 from src.apps.kite.models import StockOfInterest, EnrichedOptionModel
-from src.apps.kite.controllers import InstrumentsController, OptionsController, PositionsController
+from src.apps.kite.controllers import (
+    InstrumentsController, OptionsController, PositionsController, GTTController
+)
 from src.logger import LOGGER
 
 STYLE = style_from_dict({
@@ -210,6 +212,7 @@ class BluechipOptionsSeller:
 
         if config.is_order_enabled:
             PositionsController.cover_naked_positions()
+            GTTController.remove_naked_gtts(positions=PositionsController.get_positions())
 
             if config.is_order_profit_booking_enabled:
                 OptionsController.exit_profited_options(profit_percentage_threshold=OPTIONS_EXIT_PROFIT_PERCENTAGE_THRESHOLD)

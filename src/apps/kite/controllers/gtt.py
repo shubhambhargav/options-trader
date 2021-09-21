@@ -7,6 +7,8 @@ import requests
 from dacite import from_dict
 
 from ..models import GTTModel
+
+import src.utilities as Utilities
 from src.apps.settings.controllers import ConfigController
 from src.logger import LOGGER
 
@@ -52,19 +54,47 @@ class GTTController:
             data=gtt_payload
         )
 
-        if response.status_code == 200:
-            LOGGER.info('Successfully placed the order for %s' % gtt.condition.tradingsymbol)
-
-            return
-
-        raise Exception('Unexpected response code got from Kite while placing the order: %d, error: %s' % (response.status_code, response.text))
+        if response.status_code != 200:
+            raise Exception('Unexpected response code got from Kite while placing the order: %d, error: %s' % (response.status_code, response.text))
 
     @staticmethod
-    def cover_naked_gtts(positions: List[positions.PositionModel]):
-        raise Exception('This functionality has not been implemented yet...')
+    def delete_gtt(gtt: GTTModel):
+        response = requests.delete(
+            'https://kite.zerodha.com/oms/gtt/triggers/%s' % gtt.id,
+            headers={
+                'Authorization': f'enctoken {KITE_AUTH_TOKEN}'
+            }
+        )
 
+        if response.status_code != 200:
+            raise Exception('Unexpected response code got from Kite while placing the order: %d, error: %s' % (response.status_code, response.text))
+
+    @staticmethod
+    def remove_naked_gtts(positions: List[positions.PositionModel]):
         gtts = GTTController.get_gtts()
 
-        position_map = {}
+        position_map = dict((position.tradingsymbol, position) for position in positions)
 
-        # TODO: Implement this
+        for gtt in gtts:
+            metadata = Utilities.tradingsymbol_to_meta(tradingsymbol=gtt.condition.tradingsymbol)
+
+            # Currently only implemented for FUTURES coverage
+            if metadata['type'] != 'FUT':
+                continue
+
+            tradingsymbol = '%(instrument)s%(datetime)s%(price)sPE' % {
+                'instrument': metadata['instrument'],
+                'datetime': metadata['datetime'],
+                'price': gtt.condition.trigger_values[0]
+            }
+
+            if position_map.get(tradingsymbol):
+                LOGGER.debug('Found corresponding position for the GTT, skipping removal...')
+
+                continue
+
+            GTTController.delete_gtt(gtt=gtt)
+
+            LOGGER.info('Removed GTT for %s, price: %s because no corresponding position was found...' % (
+                gtt.condition.tradingsymbol, gtt.condition.trigger_values[0]
+            ))

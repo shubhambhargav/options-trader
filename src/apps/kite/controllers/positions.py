@@ -113,6 +113,8 @@ class PositionsController:
                 option_meta=option_meta
             )
 
+            LOGGER.info('Successfully placed a cover for option: %s...' % option_position.tradingsymbol)
+
     @staticmethod
     def exit_position(position: PositionModel):
         order = {
