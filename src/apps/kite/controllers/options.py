@@ -140,7 +140,7 @@ class OptionsController:
         positions = PositionsController.get_positions()
         orders = OrdersController.get_orders()
 
-        order_dict = dict((order.tradingsymbol, order) for order in orders)
+        order_dict = dict((order.tradingsymbol, order) for order in orders if order.status != 'CANCELLED')
 
         for position in positions:
             if not position.is_option():
