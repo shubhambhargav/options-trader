@@ -12,7 +12,7 @@ class OrderModel:
     exchange_timestamp: str
     exchange_update_timestamp: str
     filled_quantity: int
-    guid: str
+    guid: Optional[str]
     instrument_token: int
     market_protection: int
     meta: dict

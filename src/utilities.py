@@ -1,9 +1,8 @@
 import collections
+from functools import reduce
 import re
 from datetime import datetime
 from dateutil.relativedelta import relativedelta, TH
-
-import pandas as pd
 
 TRADINGSYMBOL_META = re.compile('(?P<instrument>[A-Z]+)(?P<datetime>[A-Z0-9]{5})(?P<type>[A-Z0-9]+)')
 
@@ -122,3 +121,16 @@ def get_last_thursday_for_derivative(datetime_str: str):
 
 def divide_chunks(input_list: list, chunk_size: int):
     return [input_list[i:i + chunk_size] for i in range(0, len(input_list), chunk_size)]
+
+
+def deepgetattr(obj, attr):
+    """Recurses through an attribute chain to get the ultimate value."""
+    split_val = attr.split('.')
+
+    val = getattr(obj, split_val[0], None)
+
+    if not val or len(split_val) == 1:
+        # End of recursion
+        return val
+
+    return deepgetattr(val, '.'.join(split_val[1:]))
