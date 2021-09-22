@@ -204,3 +204,13 @@ class OptionsController:
             option.enriched_instrument = enriched_instruments_data[option.underlying_instrument]
 
         return enriched_options
+
+    @staticmethod
+    def update_orders(options: List[EnrichedOptionModel]) -> List[EnrichedOptionModel]:
+        orders = OrdersController.get_orders()
+        option_orders = dict((order.tradingsymbol, order) for order in orders)
+
+        for option in options:
+            option.orders = option_orders.get(option.tradingsymbol)
+
+        return options

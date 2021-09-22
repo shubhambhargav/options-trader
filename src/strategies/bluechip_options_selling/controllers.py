@@ -1,8 +1,6 @@
-from operator import attrgetter
 from typing import List
 
 import emoji
-from numpy import isnan
 import pandas as pd
 from PyInquirer import Token, Separator, prompt, style_from_dict
 from dacite import from_dict
@@ -256,7 +254,24 @@ class BluechipOptionsSeller:
                 OptionsController.exit_profited_options(profit_percentage_threshold=OPTIONS_EXIT_PROFIT_PERCENTAGE_THRESHOLD)
 
         options = self._get_options(stocks=config.stocks)
-        options = self._get_options_of_interest(options=options)
+        trade_options = self._get_options_of_interest(options=options)
 
         if config.is_order_enabled and options:
-            self._trade_options(options=options)
+            self._trade_options(options=trade_options)
+
+            to_continue_question = [{
+                'type': 'confirm',
+                'name': 'continue',
+                'message': 'Would you like to trade more from the existing options?',
+                'default': False
+            }]
+
+            to_continue = prompt(questions=to_continue_question, style=STYLE)['continue']
+
+            while to_continue:
+                options = OptionsController.update_orders(options=options)
+                trade_options = self._get_options_of_interest(options=options)
+
+                self._trade_options(options=trade_options)
+
+                to_continue = prompt(questions=to_continue_question, style=STYLE)['continue']
