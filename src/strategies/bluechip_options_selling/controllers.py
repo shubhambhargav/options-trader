@@ -162,7 +162,6 @@ class BluechipOptionsSeller:
         primary_key_columns = [col['name'] for col in columns if col.get('primary_key')]
         secondary_key_columns = [col['name'] for col in columns if col.get('secondary_key')]
 
-
         for option in options:
             option_dict = {}
             option_dict['object'] = option
