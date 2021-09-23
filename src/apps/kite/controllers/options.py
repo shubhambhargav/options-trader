@@ -21,7 +21,7 @@ from src.apps.settings.controllers import ConfigController
 from src.logger import LOGGER
 
 KITE_AUTH_TOKEN = ConfigController.get_config().kite_auth_token
-OPTIONS_SELLING_TARGET = -90  # in percentage i.e. recovering the entire put amount
+OPTIONS_SELLING_TARGET = -100  # in percentage i.e. recovering the entire put amount
 OPTIONS_SELLING_STOPLOSS = 250  # in percentage i.e. only holding till 250 % drop
 
 
