@@ -1,3 +1,6 @@
+"""
+Referred to, from here: https://github.com/zerodha/pykiteconnect
+"""
 import six
 import sys
 import time
