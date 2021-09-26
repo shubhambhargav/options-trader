@@ -83,7 +83,7 @@ class InstrumentsController:
         return candles[0]
 
     @staticmethod
-    def get_instrument_candles(tickersymbol: str, from_date: date, to_date: date) -> List[CandleModel]:
+    def get_instrument_candles(tickersymbol: str, from_date: date = None, to_date: date = None) -> List[CandleModel]:
         insturment_token_dict = InstrumentsController.get_instrument_token_dict()
 
         # Following is documented here: https://kite.trade/docs/connect/v3/historical/
