@@ -10,6 +10,8 @@ from src.apps.nse.models.options import HistoricalOptionModel
 EXPIRY_DATE_FORMAT = '%d-%m-%Y'
 FROM_TO_DATE_FORMAT = '%d-%b-%Y'
 
+FLOAT_FIELDS = set(['strike_price', 'open', 'high', 'low', 'close', 'ltp', 'settle_price'])
+
 
 class OptionsController:
     @staticmethod
@@ -18,7 +20,7 @@ class OptionsController:
             from_date = expiry_date - timedelta(days=7)
 
         if not to_date:
-            to_date = expiry_date - timedelta(days=7)
+            to_date = expiry_date
 
         url = 'https://www1.nseindia.com/products/dynaContent/common/productsSymbolMapping.jsp?instrumentType=OPTIDX&symbol=%(tickersymbol)s&expiryDate=%(expiry_date)s&optionType=%(option_type)s&strikePrice=&dateRange=&fromDate=%(from_date)s&toDate=%(to_date)s&segmentLink=9&symbolCount=' % {
             'tickersymbol': tickersymbol,
@@ -28,7 +30,8 @@ class OptionsController:
             'to_date': to_date.strftime(FROM_TO_DATE_FORMAT)
         }
         headers = {
-            'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/93.0.4577.82 Safari/537.36'
+            'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/93.0.4577.82 Safari/537.36',
+            'Referer': 'https://www1.nseindia.com/products/content/derivatives/equities/historical_fo.htm'
         }
 
         response = requests.get(url, headers=headers)
@@ -51,7 +54,10 @@ class OptionsController:
                 continue
 
             content = line.strip().replace('"', '').split(',')
+            content = dict(zip(headers, content))
 
-            data.append(from_dict(data_class=HistoricalOptionModel, data=dict(zip(headers, content))))
+            content = dict((k, float(v) if k in FLOAT_FIELDS else v) for k, v in content.items())
+
+            data.append(from_dict(data_class=HistoricalOptionModel, data=content))
 
         return data

@@ -1,7 +1,7 @@
 from dataclasses import asdict
 import json
 from typing import List
-from datetime import datetime, timedelta
+from datetime import date, datetime, timedelta
 
 import requests
 import pandas as pd
@@ -73,16 +73,32 @@ class InstrumentsController:
         return from_dict(data_class=InstrumentModel, data=instrument)
 
     @staticmethod
-    def get_instrument_candles(tickersymbol: str) -> List[CandleModel]:
+    def get_instrument_price_details(tickersymbol: str, date_val: date) -> CandleModel:
+        candles = InstrumentsController.get_instrument_candles(
+            tickersymbol=tickersymbol,
+            from_date=date_val,
+            to_date=date_val
+        )
+
+        return candles[0]
+
+    @staticmethod
+    def get_instrument_candles(tickersymbol: str, from_date: date, to_date: date) -> List[CandleModel]:
         insturment_token_dict = InstrumentsController.get_instrument_token_dict()
 
         # Following is documented here: https://kite.trade/docs/connect/v3/historical/
         response_headers = ['timestamp', 'open', 'high', 'low', 'close', 'volume']
 
         tickersymbol_backup = {
-            'BANKNIFTY': 'NIFTY BANK',
+            'BANKNIFTY': '260105',
             'NIFTY': '256265'
         }
+
+        if not from_date:
+            from_date = datetime.now() - timedelta(days=365)
+
+        if not to_date:
+            to_date = datetime.now()
 
         instrument_token = insturment_token_dict[tickersymbol] if tickersymbol in insturment_token_dict else tickersymbol_backup[tickersymbol]
 
@@ -90,8 +106,8 @@ class InstrumentsController:
             'https://kite.zerodha.com/oms/instruments/historical/%(instrument_token)s/day?user_id=%(user_id)s&oi=1&from=%(from)s&to=%(to)s' % {
                 'instrument_token': instrument_token,
                 'user_id': UsersController.get_current_user().user_id,
-                'from': (datetime.now() - timedelta(days=365)).strftime('%Y-%m-%d'),
-                'to': datetime.now().strftime('%Y-%m-%d')
+                'from': from_date.strftime('%Y-%m-%d'),
+                'to': to_date.strftime('%Y-%m-%d')
             },
             headers={
                 'Authorization': f'enctoken {KITE_AUTH_TOKEN}'

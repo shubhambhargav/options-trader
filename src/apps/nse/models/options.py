@@ -1,4 +1,4 @@
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
 
 @dataclass
@@ -7,13 +7,13 @@ class HistoricalOptionModel:
     date: str
     expiry: str
     option_type: str
-    strike_price: str
-    open: str
-    high: str
-    low: str
-    close: str
-    ltp: str
-    settle_price: str
+    strike_price: float
+    open: float
+    high: float
+    low: float
+    close: float
+    ltp: float
+    settle_price: float
     no_of_contracts: str
     turnover_in_lacs: str
     premium_turnover_in_lacs: str
