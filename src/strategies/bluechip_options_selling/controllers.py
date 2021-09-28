@@ -70,8 +70,6 @@ class BluechipOptionsSeller:
                     { 'name': 'HINDUNILVR' },
                     { 'name': 'MARUTI' },
                     { 'name': 'NESTLEIND' },
-                    Separator('= Emerging Market ='),
-                    { 'name': 'HDFCAMC' },
                     Separator('= Tech ='),
                     { 'name': 'INFY' },
                     { 'name': 'TCS' },
