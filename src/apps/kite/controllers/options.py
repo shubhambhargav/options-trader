@@ -77,7 +77,8 @@ class OptionsController:
             'stoploss': '0',
             'trailing_stoploss': '0',
             'user_id': UsersController.get_current_user().user_id,
-            'gtt_params': '[[0,%s],[0,%s]]' % (OPTIONS_SELLING_TARGET, OPTIONS_SELLING_STOPLOSS)
+            # Following has been disabled because the system adds a future at the next iteration of option buy
+            # 'gtt_params': '[[0,%s],[0,%s]]' % (OPTIONS_SELLING_TARGET, OPTIONS_SELLING_STOPLOSS)
         }
 
         headers = {
