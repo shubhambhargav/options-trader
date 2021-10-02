@@ -41,6 +41,7 @@ class BackTester:
         #     'RELIANCE', 'BHARTIARTL', 'PVR'
         # ]
         stocks_of_interest = ['HDFC', 'HEROMOTOCO', 'HINDUNILVR', 'INFY']
+        stocks_of_interest = ['HDFC']
 
         stocks = [{ 'tickersymbol': stock } for stock in stocks_of_interest]
 
@@ -77,6 +78,14 @@ class BackTester:
 
         # Note: Considering the entry point to be fixed
         days_of_trading = [
+            { 'on_date': date(2019, 12, 30), 'expiry': date(2020, 1, 30) },
+            { 'on_date': date(2020, 1, 27), 'expiry': date(2020, 2, 27) },
+            { 'on_date': date(2020, 2, 26), 'expiry': date(2020, 3, 26) },
+            { 'on_date': date(2020, 3, 30), 'expiry': date(2020, 4, 30) },
+            { 'on_date': date(2020, 4, 28), 'expiry': date(2020, 5, 28) },
+            { 'on_date': date(2020, 5, 26), 'expiry': date(2020, 6, 25) },
+            { 'on_date': date(2020, 6, 30), 'expiry': date(2020, 7, 30) },
+            { 'on_date': date(2020, 7, 27), 'expiry': date(2020, 8, 27) },
             { 'on_date': date(2020, 8, 24), 'expiry': date(2020, 9, 24) },
             { 'on_date': date(2020, 9, 29), 'expiry': date(2020, 10, 29) },
             { 'on_date': date(2020, 10, 26), 'expiry': date(2020, 11, 26) },

@@ -5,6 +5,7 @@ import requests
 from bs4 import BeautifulSoup
 from dacite import from_dict
 
+from src.cache import Cache
 from src.apps.nse.models.options import HistoricalOptionModel
 
 EXPIRY_DATE_FORMAT = '%d-%m-%Y'
@@ -14,6 +15,7 @@ FLOAT_FIELDS = set(['strike_price', 'open', 'high', 'low', 'close', 'ltp', 'sett
 
 
 class OptionsController:
+    @Cache
     @staticmethod
     def get_historical_data(tickersymbol: str, expiry_date: date, strike_price: float = '', option_types: str = ['PE', 'CE'], from_date: date = None, to_date: date = None) -> List[HistoricalOptionModel]:
         if not from_date:

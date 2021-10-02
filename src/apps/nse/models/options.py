@@ -1,4 +1,4 @@
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from datetime import datetime
 from src.apps.kite.models.orders import OrderModel
 from src.apps.kite.models.positions import PositionModel
@@ -75,20 +75,20 @@ class HistoricalOptionModel:
     profit: float = 0
     lot_size: int = 0
     backup_money: float = 0
-    margin: HistoricalOptionMarginModel = DefaultVal(HistoricalOptionMarginModel)
+    margin: HistoricalOptionMarginModel = field(default=None)
     time_to_expiry_in_days: int = 0
     strike: float = 0
     # Enriched option related information
     percentage_dip: float = 0
-    instrument_data: InstrumentModel = DefaultVal(InstrumentModel)
+    instrument_data: InstrumentModel = field(default=None)
     sequence_id: int = 0
     profit_percentage: float = 0
-    position: Optional[PositionModel] = DefaultVal(PositionModel)
-    orders: Optional[List[OrderModel]] = DefaultVal(List[OrderModel])
+    position: Optional[PositionModel] = field(default=None)
+    orders: Optional[List[OrderModel]] = field(default_factory=list)
     # TODO: Figure out a way to remove 'str' from the following, currently dataframe conversion transforms
     #       the underlying value to a stringified (not exactly) type which is not converatable back to an array
-    instrument_positions:  Optional[Union[List[PositionModel], str]] = DefaultVal(List[PositionModel])
-    enriched_instrument: EnrichedInstrumentModel = DefaultVal(EnrichedInstrumentModel)
+    instrument_positions:  Optional[Union[List[PositionModel], str]] = field(default_factory=list)
+    enriched_instrument: Optional[EnrichedInstrumentModel] = field(default=None)
 
     def __post_init__(self):
         self.tickersymbol = self.symbol

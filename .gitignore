@@ -8,3 +8,6 @@ __pycache__/
 options-trader/
 profiler.txt
 .vscode/
+
+# Local cache
+.trader-cache/
