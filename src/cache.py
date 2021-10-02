@@ -29,6 +29,8 @@ class Cache:
         if not os.path.exists(CACHE_FOLDER):
             os.makedirs(CACHE_FOLDER)
 
+        self.load()
+
     def memory(self):
         return self._memory
 
