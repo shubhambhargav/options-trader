@@ -72,7 +72,7 @@ class BackTester:
 
             instrument_price = InstrumentsController.get_instrument_price_details(
                 tickersymbol=tickersymbol,
-                date_val=position_date
+                on_date=position_date
             ).close
 
             print('Price for BANKNIFTY on %s is: %s' % (iteration_date, instrument_price))
@@ -106,7 +106,7 @@ class BackTester:
 
             expiry_day_instrument_price = InstrumentsController.get_instrument_price_details(
                 tickersymbol=tickersymbol,
-                date_val=iteration_date
+                on_date=iteration_date
             ).close
 
             expiry_options_data = OptionsController.get_historical_data(

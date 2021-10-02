@@ -1,7 +1,8 @@
+from collections import defaultdict
+from datetime import date
 from typing import List
 
 import emoji
-import pandas as pd
 from PyInquirer import Token, Separator, prompt, style_from_dict
 from dacite import from_dict
 
@@ -11,6 +12,7 @@ from src.apps.kite.models import StockOfInterest, EnrichedOptionModel
 from src.apps.kite.controllers import (
     InstrumentsController, OptionsController, PositionsController, GTTController
 )
+from src.apps.nse.controllers.options import OptionsController as NSEOptionsController
 from src.logger import LOGGER
 
 STYLE = style_from_dict({
@@ -27,9 +29,135 @@ OPTIONS_MAX_TIME_TO_EXPIRY = 40  # in days
 OPTIONS_EXIT_PROFIT_PERCENTAGE_THRESHOLD = 90  # in percentage
 
 
-class BluechipOptionsSeller:
+class BackTester:
     def __init__(self):
         pass
+
+    def get_stocks(self) -> List[StockOfInterest]:
+        # stocks_of_interest = [
+        #     'COALINDIA', 'ICICIBANK', 'IDFCFIRSTB', 'HDFCBANK', 'M&MFIN', 'KOTAKBANK',
+        #     'BANDHANBNK', 'HEROMOTOCO', 'TITAN', 'ASIANPAINT', 'MRF', 'HINDUNILVR',
+        #     'MARUTI', 'NESTLEIND', 'INFY', 'TCS', 'HDFC', 'DRREDDY', 'TATACHEM',
+        #     'RELIANCE', 'BHARTIARTL', 'PVR'
+        # ]
+        stocks_of_interest = ['HDFC', 'HEROMOTOCO', 'HINDUNILVR', 'INFY']
+
+        stocks = [{ 'tickersymbol': stock } for stock in stocks_of_interest]
+
+        return [from_dict(data_class=StockOfInterest, data=stock) for stock in stocks]
+
+    def _get_options(self, stocks: List[StockOfInterest], on_date: date) -> List[EnrichedOptionModel]:
+        all_options = []
+
+        for stock in stocks:
+            instrument = InstrumentsController.get_instrument(tickersymbol=stock.tickersymbol, on_date=on_date)
+            options = InstrumentsController.get_options_chain(instrument=instrument, on_date=on_date)
+
+            options = list(filter(
+                # Only interested in
+                #   - PE options
+                #   - valid PE i.e. less price than instrument_price
+                #   - only looking for options within next X numeber of days
+                lambda option: option.instrument_type == 'PE' \
+                    and option.strike < instrument.last_price \
+                    and option.time_to_expiry_in_days < OPTIONS_MAX_TIME_TO_EXPIRY \
+                    and stock.custom_filters.minimum_dip < ((instrument.last_price - option.strike) / instrument.last_price * 100) < stock.custom_filters.maximum_dip,
+                options
+            ))
+            options = OptionsController.enrich_options(options=options, on_date=on_date)
+
+            all_options += options
+
+            LOGGER.debug('Processed for %s' % stock.tickersymbol)
+
+        return all_options
+
+    def run(self):
+        stocks = self.get_stocks()
+
+        # Note: Considering the entry point to be fixed
+        days_of_trading = [
+            { 'on_date': date(2020, 8, 24), 'expiry': date(2020, 9, 24) },
+            { 'on_date': date(2020, 9, 29), 'expiry': date(2020, 10, 29) },
+            { 'on_date': date(2020, 10, 26), 'expiry': date(2020, 11, 26) },
+            { 'on_date': date(2020, 11, 27), 'expiry': date(2020, 12, 31) },
+            { 'on_date': date(2020, 12, 28), 'expiry': date(2021, 1, 28) },
+            { 'on_date': date(2021, 1, 20), 'expiry': date(2021, 2, 25) },
+            { 'on_date': date(2021, 2, 25), 'expiry': date(2021, 3, 25) },
+            { 'on_date': date(2021, 3, 26), 'expiry': date(2021, 4, 29) },
+            { 'on_date': date(2021, 4, 27), 'expiry': date(2021, 5, 27) },
+            { 'on_date': date(2021, 5, 24), 'expiry': date(2021, 6, 24) },
+            { 'on_date': date(2021, 6, 29), 'expiry': date(2021, 7, 29) },
+            { 'on_date': date(2021, 7, 26), 'expiry': date(2021, 8, 26) },
+            { 'on_date': date(2021, 8, 30), 'expiry': date(2021, 9, 30) },
+        ]
+
+        # TODO
+        # 1. Add the custom entry point
+        # 2. Add the day based actions (optional)
+        # 2.1 Figure out if the GTT will even trigger
+
+        total_pnl = 0
+        positions = defaultdict(list)
+
+        for trade_day in days_of_trading:
+            print('Processing for %s' % trade_day['on_date'])
+
+            options = self._get_options(stocks=stocks, on_date=trade_day['on_date'])
+
+            options = sorted(
+                list(
+                    filter(
+                        lambda x: x.percentage_dip > 10 and x.percentage_dip < 16 and x.open_int > 0 and x.profit > 2000,
+                        options
+                    )
+                ),
+                key=lambda x: x.profit, reverse=True
+            )
+
+            grouped_options = defaultdict(list)
+
+            for option in options:
+                grouped_options[option.underlying_instrument].append(option)
+
+            for _, option_list in grouped_options.items():
+                selected_option = list(option_list)[0]
+
+                expiry_data = NSEOptionsController.get_historical_data(
+                    tickersymbol=selected_option.underlying_instrument,
+                    expiry_date=trade_day['expiry'],
+                    option_types=[selected_option.instrument_type],
+                    strike_price=selected_option.strike,
+                    from_date=trade_day['expiry'],
+                    to_date=trade_day['expiry']
+                )[0]
+
+                pnl = (selected_option.last_price - expiry_data.close) * selected_option.lot_size
+
+                positions[trade_day['on_date']].append({
+                    'position': selected_option,
+                    'expiry': expiry_data,
+                    'pnl': pnl
+                })
+
+                total_pnl += pnl
+
+            print('Positions taken on %s' % trade_day['on_date'])
+            print('\n'.join([
+                'symbol: %s strike: %s dip: %.2f pnl: %.2f' % (
+                    position['position'].symbol, position['position'].strike, position['position'].percentage_dip,
+                    position['pnl']
+                ) \
+                    for position in positions[trade_day['on_date']]
+            ]))
+            print('Pnl: %.2f' % sum(position['pnl'] for position in positions[trade_day['on_date']]))
+
+        print('\nTotal pnl: %.2f' % total_pnl)
+
+
+class BluechipOptionsSeller:
+    def __init__(self, backtesting_enabled: bool = False):
+        self.backtesting_enabled = backtesting_enabled
 
     def get_config(self) -> ConfigModel:
         questions = [

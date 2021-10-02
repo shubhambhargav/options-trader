@@ -1,5 +1,6 @@
 from dataclasses import asdict
 import json
+from src.apps.nse.models.options import HistoricalOptionModel
 from typing import List
 from datetime import date, datetime, timedelta
 
@@ -10,6 +11,7 @@ from dacite import from_dict
 from .users import UsersController
 
 import src.utilities as Utilities
+from src.apps.nse.controllers.options import OptionsController as HistoricalOptionalsController
 from src.apps.settings.controllers import ConfigController
 
 from ..models import InstrumentModel, EnrichedInstrumentModel, CandleModel, OptionModel, StockOfInterest
@@ -43,7 +45,7 @@ class InstrumentsController:
         return instrument_token_dict
 
     @staticmethod
-    def get_instrument(tickersymbol: str) -> InstrumentModel:
+    def get_instrument(tickersymbol: str, on_date: date = None) -> InstrumentModel:
         """Legacy function from options module"""
         # TODO: Possibly retire this function
         response = requests.post(
@@ -70,14 +72,22 @@ class InstrumentsController:
 
         instrument['tickersymbol'] = tickersymbol
 
-        return from_dict(data_class=InstrumentModel, data=instrument)
+        instrument = from_dict(data_class=InstrumentModel, data=instrument)
+
+        if on_date:
+            instrument.last_price = InstrumentsController.get_instrument_price_details(
+                tickersymbol=instrument.tickersymbol,
+                on_date=on_date
+            ).close
+
+        return instrument
 
     @staticmethod
-    def get_instrument_price_details(tickersymbol: str, date_val: date) -> CandleModel:
+    def get_instrument_price_details(tickersymbol: str, on_date: date) -> CandleModel:
         candles = InstrumentsController.get_instrument_candles(
             tickersymbol=tickersymbol,
-            from_date=date_val,
-            to_date=date_val
+            from_date=on_date,
+            to_date=on_date
         )
 
         return candles[0]
@@ -125,7 +135,7 @@ class InstrumentsController:
         return instrument_candles
 
     @staticmethod
-    def get_options_chain(instrument: InstrumentModel) -> List[OptionModel]:
+    def get_options_chain(instrument: InstrumentModel, on_date: date = None) -> List[OptionModel]:
         response = requests.get(
             'https://api.sensibull.com/v1/instruments/%s' % instrument.tickersymbol
         )
@@ -133,14 +143,26 @@ class InstrumentsController:
         if response.status_code != 200:
             raise Exception('Invalid response code found: %s, expected: 200' % response.status_code)
 
+        if on_date:
+            return HistoricalOptionalsController.get_historical_data(
+                tickersymbol=instrument.tickersymbol,
+                expiry_date=Utilities.get_last_thursday_for_derivative(dt=on_date + timedelta(days=30)),
+                from_date=on_date,
+                to_date=on_date
+            )
+
         return [from_dict(data_class=OptionModel, data=option) for option in response.json()['data']]
 
     @staticmethod
-    def enrich_instruments(instruments: List[StockOfInterest]) -> List[EnrichedInstrumentModel]:
+    def enrich_instruments(instruments: List[StockOfInterest], on_date: date = None) -> List[EnrichedInstrumentModel]:
         candles_df = pd.DataFrame()
 
         for instrument in instruments:
-            candles = InstrumentsController.get_instrument_candles(tickersymbol=instrument.tickersymbol)
+            candles = InstrumentsController.get_instrument_candles(
+                tickersymbol=instrument.tickersymbol,
+                from_date=on_date - timedelta(days=365),
+                to_date=on_date
+            )
 
             candles = [{**asdict(candle), **asdict(instrument)} for candle in candles]
             instrument_candles_df = pd.DataFrame.from_dict(data=candles)

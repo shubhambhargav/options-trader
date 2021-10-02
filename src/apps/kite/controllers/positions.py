@@ -23,7 +23,7 @@ class NakedPositionCover:
         if not isinstance(position, PositionModel):
             position = from_dict(data_class=PositionModel, data=position)
 
-        expiry = Utilities.get_last_thursday_for_derivative(datetime_str=option_meta['datetime'])
+        expiry = Utilities.get_last_thursday_for_derivative(dt=option_meta['datetime'])
 
         gtt = {
             'condition': {

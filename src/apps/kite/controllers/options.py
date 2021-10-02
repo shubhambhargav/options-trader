@@ -1,9 +1,11 @@
 from collections import defaultdict
 from dataclasses import asdict
+from datetime import date
 import json
+from src.apps.nse.models.options import HistoricalOptionModel
 from src.apps.kite.models.base import StockOfInterest
 from src.apps.kite.controllers.positions import PositionsController, OrdersController
-from typing import List
+from typing import List, Union
 from dacite import from_dict
 
 import requests
@@ -162,39 +164,48 @@ class OptionsController:
             PositionsController.exit_position(position=position)
 
     @staticmethod
-    def enrich_options(options: List[OptionModel]) -> List[EnrichedOptionModel]:
+    def enrich_options(options: List[OptionModel], on_date: date = None) -> Union[List[EnrichedOptionModel], List[HistoricalOptionModel]]:
         enriched_options = []
-        margin_data = OptionsController.get_option_margin_bulk(options=options)
-        positions = PositionsController.get_positions()
-        orders = OrdersController.get_orders()
 
         instrument_positions = defaultdict(list)
         option_positions = defaultdict()
         option_orders = defaultdict(list)
 
-        for order in orders:
-            option_orders[order.tradingsymbol] = order
+        if not on_date:
+            margin_data = OptionsController.get_option_margin_bulk(options=options)
+            # TODO: Add a mechanism to inject mocked position and order data here for
+            #       the scenario where on_date is available
+            positions = PositionsController.get_positions()
+            orders = OrdersController.get_orders()
 
-        for position in positions:
-            instrument_positions[position.underlying_instrument].append(position)
-            option_positions[position.tradingsymbol] = position
+            for order in orders:
+                option_orders[order.tradingsymbol] = order
+
+            for position in positions:
+                instrument_positions[position.underlying_instrument].append(position)
+                option_positions[position.tradingsymbol] = position
 
         # Following is used to avoid multiple calls to the underlying instrument API
         instruments = list(set([option.underlying_instrument for option in options]))
-        instruments_data = dict((instrument, InstrumentsController.get_instrument(tickersymbol=instrument)) for instrument in instruments)
+        instruments_data = dict((instrument, InstrumentsController.get_instrument(tickersymbol=instrument, on_date=on_date)) for instrument in instruments)
 
         enriched_instruments_data = InstrumentsController.enrich_instruments(
-            instruments=[from_dict(data_class=StockOfInterest, data={'tickersymbol': instrument}) for instrument in instruments]
+            instruments=[from_dict(data_class=StockOfInterest, data={'tickersymbol': instrument}) for instrument in instruments],
+            on_date=on_date
         )
         enriched_instruments_data = dict((instrument.tickersymbol, instrument) for instrument in enriched_instruments_data)
 
         for iteration, option in enumerate(options):
-            option = EnrichedOptionModel(**asdict(option))
+            if not on_date:
+                option = EnrichedOptionModel(**asdict(option))
 
             option.position = option_positions.get(option.tradingsymbol)
             option.orders = option_orders.get(option.tradingsymbol)
             option.instrument_positions = instrument_positions.get(option.underlying_instrument)
-            option.margin = margin_data[iteration]
+
+            if not on_date:
+                option.margin = margin_data[iteration]
+
             option.profit_percentage = (option.profit / option.margin.total) * 100
 
             enriched_options.append(option)

@@ -1,7 +1,8 @@
 import collections
 from functools import reduce
 import re
-from datetime import datetime
+from datetime import date, datetime
+from typing import Union
 from dateutil.relativedelta import relativedelta, TH
 
 TRADINGSYMBOL_META = re.compile('(?P<instrument>[A-Z]+)(?P<datetime>[A-Z0-9]{5})(?P<type>[A-Z0-9]+)')
@@ -95,17 +96,20 @@ def tradingsymbol_to_meta(tradingsymbol: str):
     return metadata_dict
 
 
-def get_last_thursday_for_derivative(datetime_str: str):
-    datetime_obj = datetime.strptime(datetime_str, '%d%b')
-    today = datetime.today()
-    current_year = today.year
-    # Year is determined based on the derivative expiry
-    # since Jan, Feb would be in the next year, year + 1 is used
-    datetime_obj = datetime(
-        year=current_year + 1 if datetime_obj.month in [1, 2] else current_year,
-        month=datetime_obj.month,
-        day=datetime_obj.day
-    )
+def get_last_thursday_for_derivative(dt: Union[str, date, datetime]):
+    if isinstance(dt, str):
+        datetime_obj = datetime.strptime(dt, '%d%b')
+        today = datetime.today()
+        current_year = today.year
+        # Year is determined based on the derivative expiry
+        # since Jan, Feb would be in the next year, year + 1 is used
+        datetime_obj = datetime(
+            year=current_year + 1 if datetime_obj.month in [1, 2] else current_year,
+            month=datetime_obj.month,
+            day=datetime_obj.day
+        )
+    else:
+        datetime_obj = dt
 
     for i in range(1, 6):
         t = datetime_obj + relativedelta(weekday=TH(i))
