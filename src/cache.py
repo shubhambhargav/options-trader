@@ -7,7 +7,7 @@ from typing import List
 from dacite import from_dict
 
 from src.apps.nse.models.options import HistoricalOptionModel
-from src.apps.kite.models.instruments import EnrichedInstrumentModel, InstrumentModel
+from src.apps.kite.models.instruments import CandleModel, EnrichedInstrumentModel, InstrumentModel
 
 CACHE_FOLDER = './.trader-cache'
 
@@ -16,7 +16,8 @@ FUNCTION_MODAL_MAP = {
     'get_historical_data': List[HistoricalOptionModel],
     'get_instrument': InstrumentModel,
     'enrich_instruments': List[EnrichedInstrumentModel],
-    'enrich_options': List[HistoricalOptionModel]
+    'enrich_options': List[HistoricalOptionModel],
+    'get_instrument_price_details': CandleModel
 }
 
 

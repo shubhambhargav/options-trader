@@ -1,5 +1,6 @@
 from collections import defaultdict
-from datetime import date
+from datetime import date, timedelta
+from src.apps.kite.models.instruments import CandleModel
 from src.apps.nse.models.options import HistoricalOptionModel
 from typing import List
 
@@ -75,30 +76,39 @@ class BackTester:
     def run(self):
         stocks = self.get_stocks()
 
-        # Note: Considering the entry point to be fixed
-        days_of_trading = [
-            { 'on_date': date(2019, 12, 30), 'expiry': date(2020, 1, 30) },
-            { 'on_date': date(2020, 1, 27), 'expiry': date(2020, 2, 27) },
-            { 'on_date': date(2020, 2, 26), 'expiry': date(2020, 3, 26) },
-            { 'on_date': date(2020, 3, 30), 'expiry': date(2020, 4, 30) },
-            { 'on_date': date(2020, 4, 28), 'expiry': date(2020, 5, 28) },
-            { 'on_date': date(2020, 5, 26), 'expiry': date(2020, 6, 25) },
-            { 'on_date': date(2020, 6, 30), 'expiry': date(2020, 7, 30) },
-            { 'on_date': date(2020, 7, 27), 'expiry': date(2020, 8, 27) },
-            { 'on_date': date(2020, 8, 24), 'expiry': date(2020, 9, 24) },
-            { 'on_date': date(2020, 9, 29), 'expiry': date(2020, 10, 29) },
-            { 'on_date': date(2020, 10, 26), 'expiry': date(2020, 11, 26) },
-            { 'on_date': date(2020, 11, 27), 'expiry': date(2020, 12, 31) },
-            { 'on_date': date(2020, 12, 28), 'expiry': date(2021, 1, 28) },
-            { 'on_date': date(2021, 1, 20), 'expiry': date(2021, 2, 25) },
-            { 'on_date': date(2021, 2, 25), 'expiry': date(2021, 3, 25) },
-            { 'on_date': date(2021, 3, 26), 'expiry': date(2021, 4, 29) },
-            { 'on_date': date(2021, 4, 27), 'expiry': date(2021, 5, 27) },
-            { 'on_date': date(2021, 5, 24), 'expiry': date(2021, 6, 24) },
-            { 'on_date': date(2021, 6, 29), 'expiry': date(2021, 7, 29) },
-            { 'on_date': date(2021, 7, 26), 'expiry': date(2021, 8, 26) },
-            { 'on_date': date(2021, 8, 30), 'expiry': date(2021, 9, 30) },
+        entry_date = 20  # x days before the expiry
+        last_n_iterations = 3  # None depicts all
+
+        days_of_expiry = [
+            date(2020, 1, 30), date(2020, 2, 27), date(2020, 3, 26), date(2020, 4, 30),
+            date(2020, 5, 28), date(2020, 6, 25), date(2020, 7, 30), date(2020, 8, 27),
+            date(2020, 9, 24), date(2020, 10, 29), date(2020, 11, 26), date(2020, 12, 31),
+            date(2021, 1, 28), date(2021, 2, 25), date(2021, 3, 25), date(2021, 4, 29),
+            date(2021, 5, 27), date(2021, 6, 24), date(2021, 7, 29), date(2021, 8, 26),
+            date(2021, 9, 30)
         ]
+        stock_market_holidays = [
+            date(2021, 9, 10)  # Ganesh Chaturthi
+        ]
+
+        days_of_trading = []
+
+        for expiry in days_of_expiry:
+            trading_day = expiry - timedelta(days=entry_date)
+
+            if trading_day.weekday() not in [0, 1, 2, 3, 4]:
+                trading_day += timedelta(days=7 - trading_day.weekday())
+
+            if trading_day in stock_market_holidays:
+                trading_day += timedelta(days=1 if trading_day.weekday() in [0, 1, 2, 3] else 3)
+
+            days_of_trading.append({
+                'on_date': trading_day,
+                'expiry': expiry
+            })
+
+        if last_n_iterations:
+            days_of_trading = days_of_trading[-1 * last_n_iterations:]
 
         # TODO
         # 1. Add the custom entry point
@@ -106,10 +116,12 @@ class BackTester:
         # 2.1 Figure out if the GTT will even trigger
 
         total_pnl = 0
+        total_optimistic_pnl = 0
+        total_expected_pnl = 0
         positions = defaultdict(list)
 
         for trade_day in days_of_trading:
-            print('Processing for %s' % trade_day['on_date'])
+            print('Processing for %s, expiry: %s' % (trade_day['on_date'], trade_day['expiry']))
 
             options = self._get_options(stocks=stocks, on_date=trade_day['on_date'])
 
@@ -135,48 +147,68 @@ class BackTester:
                     continue
 
                 selected_option: HistoricalOptionModel = list(option_list)[0]
+                expected_pnl = selected_option.close * selected_option.lot_size
 
-                expiry_data = NSEOptionsController.get_historical_data(
+                instrument_expiry: CandleModel = InstrumentsController.get_instrument_price_details(
                     tickersymbol=selected_option.underlying_instrument,
-                    expiry_date=trade_day['expiry'],
-                    option_types=[selected_option.instrument_type],
-                    strike_price=selected_option.strike,
-                    from_date=trade_day['expiry'],
-                    to_date=trade_day['expiry']
+                    on_date=trade_day['expiry']
                 )
 
-                if not expiry_data:
-                    continue
+                if instrument_expiry.close >= selected_option.strike:
+                    pnl = expected_pnl
+                    expiry_data = None
+                else:
+                    expiry_data = NSEOptionsController.get_historical_data(
+                        tickersymbol=selected_option.underlying_instrument,
+                        expiry_date=trade_day['expiry'],
+                        option_types=[selected_option.instrument_type],
+                        strike_price=selected_option.strike,
+                        from_date=trade_day['expiry'],
+                        to_date=trade_day['expiry']
+                    )
 
-                expiry_data = expiry_data[0]
+                    if not expiry_data:
+                        print('Could not find the expiry data for option: ', selected_option)
 
-                pnl = (selected_option.last_price - expiry_data.close) * selected_option.lot_size
+                        continue
+
+                    expiry_data = expiry_data[0]
+
+                    pnl = (selected_option.last_price - expiry_data.close) * selected_option.lot_size
+
+                optimistic_pnl = 0 if pnl < 0 else pnl
 
                 positions[trade_day['on_date']].append({
                     'position': selected_option,
                     'expiry': expiry_data,
+                    'expected_pnl': expected_pnl,
+                    'optimistic_pnl': optimistic_pnl,
                     'pnl': pnl
                 })
 
+                total_expected_pnl += expected_pnl
                 total_pnl += pnl
+                total_optimistic_pnl += optimistic_pnl
 
             print('Positions taken on %s' % trade_day['on_date'])
             print('\n'.join([
-                'symbol: %s strike: %s dip: %.2f pnl: %.2f, margin: %.2f\topen_int: %.2f' % (
+                'symbol: %s strike: %s dip: %.2f expected-pnl: %.2f real-pnl: %.2f, margin: %.2f\topen_int: %.2f' % (
                     position['position'].symbol, position['position'].strike, position['position'].percentage_dip,
-                    position['pnl'], position['position'].margin.total,
+                    position['expected_pnl'], position['pnl'], position['position'].margin.total,
                     position['position'].open_int
                 ) \
                     for position in positions[trade_day['on_date']]
             ]))
             print(
-                'Pnl: %.2f, Margin: %.2f' % (
+                'Real-Pnl: %.2f, Optimistic-Pnl: %.2f, Expected-Pnl: %.2f, Margin: %.2f' % (
                     sum(position['pnl'] for position in positions[trade_day['on_date']]),
+                    sum(position['optimistic_pnl'] for position in positions[trade_day['on_date']]),
+                    sum(position['expected_pnl'] for position in positions[trade_day['on_date']]),
                     sum(position['position'].margin.total for position in positions[trade_day['on_date']])
                 )
             )
 
-        print('\nTotal pnl: %.2f' % total_pnl)
+        print('\nReal-pnl: %.2f, Optimistic-pnl: %.2f, Total expected-pnl: %.2f ' % (total_pnl, total_optimistic_pnl, total_expected_pnl))
 
 
 class BluechipOptionsSeller:

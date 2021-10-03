@@ -83,6 +83,7 @@ class InstrumentsController:
 
         return instrument
 
+    @Cache
     @staticmethod
     def get_instrument_price_details(tickersymbol: str, on_date: date) -> CandleModel:
         candles = InstrumentsController.get_instrument_candles(
