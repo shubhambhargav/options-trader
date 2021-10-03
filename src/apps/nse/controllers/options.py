@@ -52,7 +52,12 @@ class OptionsController:
 
             soup = BeautifulSoup(response.text, 'html.parser')
 
-            csv_content = soup.find('div', {'id': 'csvContentDiv'}).get_text()
+            csv_content = soup.find('div', {'id': 'csvContentDiv'})
+
+            if not csv_content:
+                continue
+
+            csv_content = csv_content.get_text()
             lines = csv_content.split(':')
 
             headers = lines[0].lower().strip() \

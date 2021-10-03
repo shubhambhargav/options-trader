@@ -10,7 +10,6 @@ from dacite.core import from_dict
 # Following have been taken as static values since the data is not publicly avaiable
 # margin calculation is primarily taken as a percentage of backup money of current data
 OPTION_DATA_MAP = {
-    # TODO: Add ITC, MRF, PIDILITIND
     'ASIANPAINT': { 'margin_bckup_ratio': 1/8, 'lot_size': 300 },
     'BANDHANBANK': { 'margin_bckup_ratio': 1/2.6, 'lot_size': 1800 },
     'BHARTIARTL': { 'margin_bckup_ratio': 1/5.5,  'lot_size': 1886 },
@@ -22,11 +21,14 @@ OPTION_DATA_MAP = {
     'HINDUNILVR': { 'margin_bckup_ratio': 1/8.5, 'lot_size': 300 },
     'ICICIBANK': { 'margin_bckup_ratio': 1/7, 'lot_size': 1375 },
     'INFY': { 'margin_bckup_ratio': 1/8.5, 'lot_size': 600 },
+    'ITC': { 'margin_bckup_ratio': 1/6, 'lot_size': 3200 },
     'KOTAKBANK': { 'margin_bckup_ratio': 1/5.5, 'lot_size': 400 },
     'M&MFIN': { 'margin_bckup_ratio': 1/5, 'lot_size': 4000 },
     'MARUTI': { 'margin_bckup_ratio': 1/6, 'lot_size': 100 },
+    'MRF': { 'margin_bckup_ratio': 1/6, 'lot_size': 10 },
     'NESTLEIND': { 'margin_bckup_ratio': 1/9, 'lot_size': 50 },
     'PVR': { 'margin_bckup_ratio': 1/6, 'lot_size': 407 },
+    'PIDILITIND': { 'margin_bckup_ratio': 1/6, 'lot_size': 500 },
     'RELIANCE': { 'margin_bckup_ratio': 1/6, 'lot_size': 250 },
     'TATACHEM': { 'margin_bckup_ratio': 1/7, 'lot_size': 1000 },
     'TCS': { 'margin_bckup_ratio': 1/7, 'lot_size': 300 },
@@ -75,12 +77,12 @@ class HistoricalOptionModel:
     profit: float = 0
     lot_size: int = 0
     backup_money: float = 0
-    margin: HistoricalOptionMarginModel = field(default=None)
+    margin: Optional[HistoricalOptionMarginModel] = field(default=None)
     time_to_expiry_in_days: int = 0
     strike: float = 0
     # Enriched option related information
     percentage_dip: float = 0
-    instrument_data: InstrumentModel = field(default=None)
+    instrument_data: Optional[InstrumentModel] = field(default=None)
     sequence_id: int = 0
     profit_percentage: float = 0
     position: Optional[PositionModel] = field(default=None)

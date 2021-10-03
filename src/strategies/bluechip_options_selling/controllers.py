@@ -1,5 +1,6 @@
 from collections import defaultdict
 from datetime import date
+from src.apps.nse.models.options import HistoricalOptionModel
 from typing import List
 
 import emoji
@@ -34,20 +35,18 @@ class BackTester:
         pass
 
     def get_stocks(self) -> List[StockOfInterest]:
-        # stocks_of_interest = [
-        #     'COALINDIA', 'ICICIBANK', 'IDFCFIRSTB', 'HDFCBANK', 'M&MFIN', 'KOTAKBANK',
-        #     'BANDHANBNK', 'HEROMOTOCO', 'TITAN', 'ASIANPAINT', 'MRF', 'HINDUNILVR',
-        #     'MARUTI', 'NESTLEIND', 'INFY', 'TCS', 'HDFC', 'DRREDDY', 'TATACHEM',
-        #     'RELIANCE', 'BHARTIARTL', 'PVR'
-        # ]
-        stocks_of_interest = ['HDFC', 'HEROMOTOCO', 'HINDUNILVR', 'INFY']
-        stocks_of_interest = ['HDFC']
+        stocks_of_interest = [
+            'COALINDIA', 'ICICIBANK', 'HDFCBANK', 'KOTAKBANK', # 'BANDHANBNK',
+            'HEROMOTOCO', 'TITAN', 'ASIANPAINT', 'MRF', 'HINDUNILVR',
+            'MARUTI', 'NESTLEIND', 'INFY', 'TCS', 'HDFC', 'DRREDDY', 'TATACHEM',
+            'RELIANCE', 'BHARTIARTL', # 'PVR'
+        ]
 
         stocks = [{ 'tickersymbol': stock } for stock in stocks_of_interest]
 
         return [from_dict(data_class=StockOfInterest, data=stock) for stock in stocks]
 
-    def _get_options(self, stocks: List[StockOfInterest], on_date: date) -> List[EnrichedOptionModel]:
+    def _get_options(self, stocks: List[StockOfInterest], on_date: date) -> List[HistoricalOptionModel]:
         all_options = []
 
         for stock in stocks:
@@ -117,7 +116,9 @@ class BackTester:
             options = sorted(
                 list(
                     filter(
-                        lambda x: x.percentage_dip > 10 and x.percentage_dip < 16 and x.open_int > 0 and x.profit > 2000,
+                        lambda x: x.percentage_dip > 10 and x.percentage_dip < 16 \
+                            and x.open_int > 0 \
+                            and x.profit > 2000 and x.profit < 15000,
                         options
                     )
                 ),
@@ -130,7 +131,10 @@ class BackTester:
                 grouped_options[option.underlying_instrument].append(option)
 
             for _, option_list in grouped_options.items():
-                selected_option = list(option_list)[0]
+                if not option_list:
+                    continue
+
+                selected_option: HistoricalOptionModel = list(option_list)[0]
 
                 expiry_data = NSEOptionsController.get_historical_data(
                     tickersymbol=selected_option.underlying_instrument,
@@ -139,7 +143,12 @@ class BackTester:
                     strike_price=selected_option.strike,
                     from_date=trade_day['expiry'],
                     to_date=trade_day['expiry']
-                )[0]
+                )
+
+                if not expiry_data:
+                    continue
+
+                expiry_data = expiry_data[0]
 
                 pnl = (selected_option.last_price - expiry_data.close) * selected_option.lot_size
 
@@ -153,13 +162,19 @@ class BackTester:
 
             print('Positions taken on %s' % trade_day['on_date'])
             print('\n'.join([
-                'symbol: %s strike: %s dip: %.2f pnl: %.2f' % (
+                'symbol: %s strike: %s dip: %.2f pnl: %.2f, margin: %.2f\topen_int: %.2f' % (
                     position['position'].symbol, position['position'].strike, position['position'].percentage_dip,
-                    position['pnl']
+                    position['pnl'], position['position'].margin.total,
+                    position['position'].open_int
                 ) \
                     for position in positions[trade_day['on_date']]
             ]))
-            print('Pnl: %.2f' % sum(position['pnl'] for position in positions[trade_day['on_date']]))
+            print(
+                'Pnl: %.2f, Margin: %.2f' % (
+                    sum(position['pnl'] for position in positions[trade_day['on_date']]),
+                    sum(position['position'].margin.total for position in positions[trade_day['on_date']])
+                )
+            )
 
         print('\nTotal pnl: %.2f' % total_pnl)
 

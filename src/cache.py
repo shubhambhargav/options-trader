@@ -1,18 +1,22 @@
 import os
 import json
-from dataclasses import asdict
+from dataclasses import asdict, is_dataclass
 
 from typing import List
 
 from dacite import from_dict
 
 from src.apps.nse.models.options import HistoricalOptionModel
+from src.apps.kite.models.instruments import EnrichedInstrumentModel, InstrumentModel
 
 CACHE_FOLDER = './.trader-cache'
 
 # Following is a patch due to the limitations of python getargspec with annotations
 FUNCTION_MODAL_MAP = {
-    'get_historical_data': List[HistoricalOptionModel]
+    'get_historical_data': List[HistoricalOptionModel],
+    'get_instrument': InstrumentModel,
+    'enrich_instruments': List[EnrichedInstrumentModel],
+    'enrich_options': List[HistoricalOptionModel]
 }
 
 
@@ -43,28 +47,34 @@ class Cache:
 
     def dump(self):
         with open(self._cache_loc, 'w+') as fileop:
-            fileop.write(json.dumps(self._memory, indent=4))
+            fileop.write(json.dumps(self._memory))
 
     def __call__(self, *args, **kwargs):
+        # Cache will not be used for latest data fetching i.e. no on_date value in the function
+        if not kwargs.get('on_date') and self._func.__name__ != 'get_historical_data':
+            return self._func(*args, **kwargs)
+
         # Note that the memory optimization only supports kwargs as of now
         hash_key = ('|'.join([str(elem) for elem in kwargs.values()]))
 
         if hash_key in self._memory:
             ret_val = self._memory[hash_key]
 
-            if self._return_model.__origin__ is list:
-                data_model = self._return_model.__args__[0]
+            if is_dataclass(self._return_model):
+                return from_dict(data_class=self._return_model, data=ret_val)
 
-                return [from_dict(data_class=data_model, data=elem) for elem in ret_val]
+            # Assuming that the non dataclass response is a list with a dataclass as an element
+            data_model = self._return_model.__args__[0]
 
-            return from_dict(data_class=self._return_model, data=ret_val)
+            return [from_dict(data_class=data_model, data=elem) for elem in ret_val]
 
         ret_val = self._func(*args, **kwargs)
 
-        if self._return_model.__origin__ is list:
-            self._memory[hash_key] = [asdict(elem) for elem in ret_val]
-        else:
+        if is_dataclass(self._return_model):
             self._memory = asdict(ret_val)
+        else:
+            # Assuming that the non dataclass response is a list with a dataclass as an element
+            self._memory[hash_key] = [asdict(elem) for elem in ret_val]
 
         self.dump()
 

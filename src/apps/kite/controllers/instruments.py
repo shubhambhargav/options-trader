@@ -1,6 +1,5 @@
 from dataclasses import asdict
 import json
-from src.apps.nse.models.options import HistoricalOptionModel
 from typing import List
 from datetime import date, datetime, timedelta
 
@@ -11,6 +10,7 @@ from dacite import from_dict
 from .users import UsersController
 
 import src.utilities as Utilities
+from src.cache import Cache
 from src.apps.nse.controllers.options import OptionsController as HistoricalOptionalsController
 from src.apps.settings.controllers import ConfigController
 
@@ -44,6 +44,7 @@ class InstrumentsController:
 
         return instrument_token_dict
 
+    @Cache
     @staticmethod
     def get_instrument(tickersymbol: str, on_date: date = None) -> InstrumentModel:
         """Legacy function from options module"""
@@ -153,6 +154,7 @@ class InstrumentsController:
 
         return [from_dict(data_class=OptionModel, data=option) for option in response.json()['data']]
 
+    @Cache
     @staticmethod
     def enrich_instruments(instruments: List[StockOfInterest], on_date: date = None) -> List[EnrichedInstrumentModel]:
         candles_df = pd.DataFrame()

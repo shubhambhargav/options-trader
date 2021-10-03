@@ -2,6 +2,7 @@ from collections import defaultdict
 from dataclasses import asdict
 from datetime import date
 import json
+from src.cache import Cache
 from src.apps.nse.models.options import HistoricalOptionModel
 from src.apps.kite.models.base import StockOfInterest
 from src.apps.kite.controllers.positions import PositionsController, OrdersController
@@ -163,6 +164,7 @@ class OptionsController:
 
             PositionsController.exit_position(position=position)
 
+    @Cache
     @staticmethod
     def enrich_options(options: List[OptionModel], on_date: date = None) -> Union[List[EnrichedOptionModel], List[HistoricalOptionModel]]:
         enriched_options = []
