@@ -43,3 +43,7 @@ class EnrichedInstrumentModel(StockOfInterest):
     rsi: float = 0
     close_last_by_min: float = 0
     close_last_by_avg: float = 0
+    last_support: float = 0
+    last_resistance: float = 0
+    close_last_by_support: float = 0
+    close_last_by_resistance: float = 0

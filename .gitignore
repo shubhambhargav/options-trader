@@ -6,6 +6,7 @@ __pycache__/
 
 # Development and testing
 options-trader/
+notebooks/
 profiler.txt
 .vscode/
 

@@ -2,6 +2,7 @@ from dataclasses import asdict
 import json
 from typing import List
 from datetime import date, datetime, timedelta
+from pandas.core.frame import DataFrame
 
 import requests
 import pandas as pd
@@ -159,13 +160,31 @@ class InstrumentsController:
     @staticmethod
     def enrich_instruments(instruments: List[StockOfInterest], on_date: date = None) -> List[EnrichedInstrumentModel]:
         candles_df = pd.DataFrame()
+        support_resistance_dict = {}
 
         for instrument in instruments:
             candles = InstrumentsController.get_instrument_candles(
                 tickersymbol=instrument.tickersymbol,
-                from_date=on_date - timedelta(days=365),
-                to_date=on_date
+                from_date=on_date - timedelta(days=365) if on_date else None,
+                to_date=on_date if on_date else None
             )
+            candles_df = pd.DataFrame.from_dict(data=[asdict(candle) for candle in candles])
+
+            support_and_resistance = TechnicalIndicatorsController.get_support_and_resistance(df=candles_df)
+
+            if support_and_resistance:
+                # TODO: Make the following more readable
+                # it's the last price where support/resistance was found
+                if support_and_resistance[-1][1] > candles[-1].close:
+                    support_resistance_dict[instrument.tickersymbol] = {
+                        'last_support': support_and_resistance[-1][1],
+                        'last_resistance': support_and_resistance[-2][1]
+                    }
+                else:
+                    support_resistance_dict[instrument.tickersymbol] = {
+                        'last_support': support_and_resistance[-2][1],
+                        'last_resistance': support_and_resistance[-1][1]
+                    }
 
             candles = [{**asdict(candle), **asdict(instrument)} for candle in candles]
             instrument_candles_df = pd.DataFrame.from_dict(data=candles)
@@ -204,5 +223,19 @@ class InstrumentsController:
         enriched_instrument_df = enriched_instrument_df \
             .join(last_buy_signal_df.set_index('tickersymbol'), on='tickersymbol', how='left') \
             .reset_index()
+
+        enriched_instrument_df['last_support'] = enriched_instrument_df['tickersymbol'].apply(lambda x: support_resistance_dict[x]['last_support'])
+        enriched_instrument_df['last_resistance'] = enriched_instrument_df['tickersymbol'].apply(lambda x: support_resistance_dict[x]['last_resistance'])
+
+        enriched_instrument_df['close_last_by_support'] = round(
+            (enriched_instrument_df['close_last'] - enriched_instrument_df['last_support']) /
+                enriched_instrument_df['close_last'] * 100,
+            2
+        )
+        enriched_instrument_df['close_last_by_resistance'] = round(
+            (enriched_instrument_df['close_last'] - enriched_instrument_df['last_resistance']) /
+                enriched_instrument_df['close_last'] * 100,
+            2
+        )
 
         return [from_dict(data_class=EnrichedInstrumentModel, data=instrument) for instrument in enriched_instrument_df.to_dict('records')]
