@@ -1,15 +1,18 @@
 import collections
 from functools import reduce
 import re
-from datetime import date, datetime
+from datetime import date, datetime, timedelta
 from typing import Union
 from dateutil.relativedelta import relativedelta, TH
 
 TRADINGSYMBOL_META = re.compile('(?P<instrument>[A-Z]+)(?P<datetime>[A-Z0-9]{5})(?P<type>[A-Z0-9]+)')
 
 
-def round_nearest(number: float, unit: float):
-    return round(number / unit) * unit
+def round_nearest(number: float, unit: float, direction: str = 'up'):
+    if direction == 'up':
+        return round(number / unit) * unit
+    else:
+        return round(number / unit) * unit - unit
 
 
 def csv_text_to_dict(text_data: str):
@@ -121,6 +124,18 @@ def get_last_thursday_for_derivative(dt: Union[str, date, datetime]):
             break
 
     return t
+
+
+def get_next_closest_thursday(dt: Union[date, datetime]):
+    thursday = 4  # weekday value of Thursday
+    current_day = dt.weekday()
+
+    if current_day < thursday:
+        offset = thursday - current_day
+    else:
+        offset = 6 + thursday - current_day
+
+    return dt + timedelta(days=offset)
 
 
 def divide_chunks(input_list: list, chunk_size: int):

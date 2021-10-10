@@ -86,7 +86,17 @@ class InstrumentsController:
 
     @Cache
     @staticmethod
-    def get_instrument_price_details(tickersymbol: str, on_date: date) -> CandleModel:
+    def get_instrument_price_details(tickersymbol: str, on_date: date = datetime.today()) -> CandleModel:
+        day_of_the_week = on_date.weekday()
+
+        # Since the program can be run on weekends, the following ensures to get the price
+        # on the last working day of the week
+        if day_of_the_week == 5:
+            on_date -= timedelta(days=1)
+
+        if day_of_the_week == 6:
+            on_date -= timedelta(days=2)
+
         candles = InstrumentsController.get_instrument_candles(
             tickersymbol=tickersymbol,
             from_date=on_date,

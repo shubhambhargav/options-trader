@@ -2,13 +2,14 @@ import click
 from PyInquirer import prompt
 
 from src.logger import LOGGER
-from src.strategies import BluechipOptionsSeller
+from src.strategies import BluechipOptionsSeller, Strangler
 
 REPR_BLUECHIP_OPTIONS_SELLER = 'bluechip_options_seller'
 
 # TODO: Build the following dynamically
 STARTEGY_MAP = {
-    'Bluechip Options Seller': BluechipOptionsSeller
+    'Bluechip Options Seller': BluechipOptionsSeller,
+    'Indices Daily Strangler': Strangler
 }
 
 
