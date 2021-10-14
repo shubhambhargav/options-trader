@@ -14,5 +14,4 @@ class CustomUniverseModel:
     updatedAt: str
     userId: str
     watchlistId: Any
-    __v: int
     _id: str

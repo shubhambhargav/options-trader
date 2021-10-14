@@ -35,7 +35,7 @@ class StockModel:
 @dataclass
 class StockResultModel:
     sid: str
-    stocl: StockModel
+    stock: StockModel
 
 
 @dataclass
@@ -51,3 +51,20 @@ class ScreenModel:
     isAccessRestricted: bool
     screened: dict
     universes: List[Any]
+
+
+@dataclass
+class ScreenListModel:
+    active: bool
+    createdAt: str
+    date: str
+    description: str
+    locked: bool
+    premium: bool
+    query: dict
+    slug: str
+    title: str
+    type: str
+    updated: str
+    updatedAt: str
+    userId: str

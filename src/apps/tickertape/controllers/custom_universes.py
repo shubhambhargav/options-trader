@@ -10,7 +10,7 @@ from ..models import CustomUniverseModel
 
 class CustomUniversesController:
     @staticmethod
-    def get_custom_universes() -> List[CustomUniverseModel]:
+    def list_custom_universes() -> List[CustomUniverseModel]:
         config = ConfigController.get_config()
 
         response = requests.get(

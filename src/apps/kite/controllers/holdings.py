@@ -28,7 +28,6 @@ class HoldingsController:
 
         return [from_dict(data_class=HoldingModel, data=holding) for holding in holdings]
 
-
     @staticmethod
     def get_holding(tradingsymbol: str) -> Optional[HoldingModel]:
         holdings = HoldingsController.get_holdings()
