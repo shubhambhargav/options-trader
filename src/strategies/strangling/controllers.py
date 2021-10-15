@@ -13,7 +13,7 @@ from src.apps.kite.controllers.options import OptionsController
 from src.apps.kite.controllers.users import UsersController
 from src.apps.kite.models.positions import PositionModel
 from src.apps.settings.controllers.config import ConfigController
-from src.strategies.strangling.models import ConfigModel, ConfigV2Model
+from src.strategies.strangling.models import ConfigModel, ConfigV2Model, MockPositionModel
 from src.logger import LOGGER
 from src import utilities as Utilities
 
@@ -85,9 +85,7 @@ def on_connect(ws, response):
     # TODO: Add the instrument token fetcher based on tickersymbol
     global POSITIONS
 
-    instrument_token_dict = InstrumentsController.get_instrument_token_dict()
-
-    position_tokens = [instrument_token_dict[position.tradingsymbol] for position in POSITIONS_DICT.keys()]
+    position_tokens = [position.instrument_token for position in POSITIONS_DICT.values()]
 
     ws.subscribe(position_tokens)
 
@@ -124,8 +122,6 @@ class Strangler:
         options = InstrumentsController.get_options_chain(instrument=instrument)
         options_dict = dict((option.tradingsymbol, option) for option in options)
 
-        print(','.join([elem for elem in options_dict.keys()]))
-
         next_thursday = Utilities.get_next_closest_thursday(dt=today)
 
         high_option = options_dict['%s%s%sCE' % (tickersymbol, next_thursday.strftime(STOCK_OPTIONS_TICKERSYMBOL_DATETIME_FORMAT).upper(), high_sell_price)]
@@ -133,20 +129,34 @@ class Strangler:
 
         if self.config.is_mock_run:
             POSITIONS_DICT.update({
-                instrument_token_dict[high_option.tradingsymbol]: high_option,
-                instrument_token_dict[low_option.tradingsymbol]: low_option
+                instrument_token_dict[high_option.tradingsymbol]: from_dict(
+                    data_class=MockPositionModel,
+                    data={
+                        'tradingsymbol': high_option.tradingsymbol,
+                        'instrument_token': high_option.instrument_token,
+                        'pnl': 0.0
+                    }
+                ),
+                instrument_token_dict[low_option.tradingsymbol]: from_dict(
+                    data_class=MockPositionModel,
+                    data={
+                        'tradingsymbol': low_option.tradingsymbol,
+                        'instrument_token': low_option.instrument_token,
+                        'pnl': 0.0
+                    }
+                )
             })
 
-            LOGGER.info('Sold upper option: ', high_option)
-            LOGGER.info('Sold upper option: ', low_option)
+            LOGGER.info('Sold upper option: %s' % high_option)
+            LOGGER.info('Sold lower option: %s' % low_option)
 
             return POSITIONS_DICT
 
         OptionsController.sell_option(option=high_option)
         OptionsController.sell_option(option=low_option)
 
-        LOGGER.info('Sold upper option: ', high_option)
-        LOGGER.info('Sold upper option: ', low_option)
+        LOGGER.info('Sold upper option: %s' % high_option)
+        LOGGER.info('Sold lower option: %s' % low_option)
 
         positions = PositionsController.get_positions()
 
@@ -212,12 +222,12 @@ class Strangler:
         #       - (Done) Add stoploss execution
         #       - (Done) Add exit strategy given the timestamp
         #       - (Done) Testing ------
-        #       - Add logging for sample run
+        #       - (Done) Add logging for sample run
         #       - [Optional] Add backtesting -- will help with testing
         #       - Testing ------
         #       - Add CLI setup for automation triggering
         #       - (Done; sort-of) [Advanced] Add program termination after market closure to save PC resources
-        #       - [Advanced] Account for cookie conflict with browser login
+        #       - (Done; with assumptions)[Advanced] Account for cookie conflict with browser login
         #       - [Advanced] Solve the bug where current expiry day is not account for on Thursdays
         # TODO (later): Figure out how to account for token refresh in-between
         nifty_option_gap = 100

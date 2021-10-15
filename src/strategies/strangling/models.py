@@ -15,3 +15,10 @@ class ConfigV2Model:
     strangle_gap: int
     stoploss_pnl: int
     is_mock_run: bool
+
+
+@dataclass
+class MockPositionModel:
+    tradingsymbol: str
+    instrument_token: int
+    pnl: float

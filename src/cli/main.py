@@ -30,4 +30,3 @@ def main():
     startegy = prompt(questions=questions)['strategy']
 
     startegy().run()
-

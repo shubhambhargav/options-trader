@@ -15,6 +15,11 @@ class UsersController:
             }
         )
 
+        if response.status_code == 403:
+            ConfigController.refresh_kite_enctoken()
+
+            return UsersController.get_current_user()
+
         if response.status_code != 200:
             raise ValueError('Unexpected response code found: %d, response: %s' % (response.status_code, response.text))
 

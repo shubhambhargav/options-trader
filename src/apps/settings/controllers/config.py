@@ -11,7 +11,7 @@ KITE_CONFIG_FILE = './config.json'
 
 
 class ConfigController:
-    CONFIG = None
+    CONFIG: ConfigModel = None
 
     @staticmethod
     def get_kite_enctoken():
@@ -72,6 +72,15 @@ class ConfigController:
         )
 
         return True if response.status_code != 200 else False
+
+    @staticmethod
+    def refresh_kite_enctoken():
+        kite_enctoken = get_cookie_dict(domain_name='kite.zerodha.com').get('enctoken')
+
+        if ConfigController.is_kite_token_invalid(enctoken=kite_enctoken):
+            kite_enctoken = ConfigController.get_kite_enctoken()
+
+        ConfigController.CONFIG.kite_auth_token = kite_enctoken
 
     @staticmethod
     def get_config() -> ConfigModel:

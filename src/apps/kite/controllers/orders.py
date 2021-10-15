@@ -9,8 +9,6 @@ from src.apps.settings.controllers import ConfigController
 from ..models import OrderModel, PlaceOrderModel
 from .users import UsersController
 
-KITE_AUTH_TOKEN = ConfigController.get_config().kite_auth_token
-
 
 class OrdersController:
     @staticmethod
@@ -18,7 +16,7 @@ class OrdersController:
         response = requests.get(
             'https://kite.zerodha.com/oms/orders',
             headers={
-                'Authorization': f'enctoken {KITE_AUTH_TOKEN}'
+                'Authorization': f'enctoken {ConfigController.get_config().kite_auth_token}'
             }
         )
 
@@ -39,11 +37,16 @@ class OrdersController:
         response = requests.post(
             'https://kite.zerodha.com/oms/orders/regular',
             headers={
-                'Authorization': f'enctoken {KITE_AUTH_TOKEN}',
+                'Authorization': f'enctoken {ConfigController.get_config().kite_auth_token}',
                 'Content-Type': 'application/x-www-form-urlencoded'
             },
             data=asdict(order)
         )
+
+        if response.status_code == 403:
+            ConfigController.refresh_kite_enctoken()
+
+            return OrdersController.place_order(order=order)
 
         if response.status_code != 200:
             raise ValueError('Unexpected response code found: %d, response: %s' % (response.status_code, response.text))
