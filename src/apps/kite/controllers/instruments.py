@@ -49,6 +49,11 @@ class InstrumentsController:
     @staticmethod
     def get_instrument(tickersymbol: str, on_date: date = None) -> InstrumentModel:
         """Legacy function from options module"""
+        instrument_map_dict = {
+            'NIFTY 50': 'NIFTY'
+        }
+        tickersymbol = instrument_map_dict.get(tickersymbol, tickersymbol)
+
         # TODO: Possibly retire this function
         response = requests.post(
             'https://api.sensibull.com/v1/instrument_details',
@@ -106,6 +111,10 @@ class InstrumentsController:
         return candles[0]
 
     @staticmethod
+    def get_last_trading_price(tickersymbol: str) -> float:
+        return InstrumentsController.get_instrument_price_details(tickersymbol=tickersymbol).close
+
+    @staticmethod
     def get_instrument_candles(tickersymbol: str, from_date: date = None, to_date: date = None) -> List[CandleModel]:
         insturment_token_dict = InstrumentsController.get_instrument_token_dict()
 
@@ -149,8 +158,13 @@ class InstrumentsController:
 
     @staticmethod
     def get_options_chain(instrument: InstrumentModel, on_date: date = None) -> List[OptionModel]:
+        instrument_map_dict = {
+            'NIFTY 50': 'NIFTY'
+        }
+        tickersymbol = instrument_map_dict.get(instrument.tickersymbol, instrument.tickersymbol)
+
         response = requests.get(
-            'https://api.sensibull.com/v1/instruments/%s' % instrument.tickersymbol
+            'https://api.sensibull.com/v1/instruments/%s' % tickersymbol
         )
 
         if response.status_code != 200:
@@ -158,7 +172,7 @@ class InstrumentsController:
 
         if on_date:
             return HistoricalOptionalsController.get_historical_data(
-                tickersymbol=instrument.tickersymbol,
+                tickersymbol=tickersymbol,
                 expiry_date=Utilities.get_last_thursday_for_derivative(dt=on_date + timedelta(days=30)),
                 from_date=on_date,
                 to_date=on_date

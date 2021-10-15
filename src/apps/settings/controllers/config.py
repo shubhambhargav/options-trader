@@ -15,6 +15,7 @@ class ConfigController:
 
         config = {}
 
+        # TODO: Add mechanism to refresh the token
         kite_cookie_dict = get_cookie_dict(domain_name='kite.zerodha.com')
         tickertape_cookie_dict = get_cookie_dict(domain_name='tickertape.in')
 
