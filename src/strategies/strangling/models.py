@@ -11,10 +11,10 @@ class ConfigModel:
 
 @dataclass
 class ConfigV2Model:
-    tickersymbol: str
-    strangle_gap: int
-    stoploss_pnl: int
-    is_mock_run: bool
+    tickersymbol: str = 'NIFTY'
+    strangle_gap: int = 200
+    stoploss_pnl: int = -1000
+    is_mock_run: bool = False
 
 
 @dataclass

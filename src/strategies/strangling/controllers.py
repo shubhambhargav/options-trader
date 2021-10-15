@@ -186,8 +186,8 @@ class Strangler:
             {
                 'type': 'input',
                 'name': 'stoploss_pnl',
-                'message': 'Stoploss PnL (please provide the absolute value)',
-                'default': '1000'
+                'message': 'Stoploss PnL (negative value for loss)',
+                'default': '-1000'
             },
             {
                 'type': 'confirm',
@@ -200,7 +200,7 @@ class Strangler:
         config = prompt(questions=questions, style=STYLE)
 
         config['strangle_gap'] = int(config['strangle_gap'])
-        config['stoploss_pnl'] = -1 * int(config['stoploss_pnl'])
+        config['stoploss_pnl'] = int(config['stoploss_pnl'])
 
         return from_dict(data_class=ConfigV2Model, data=config)
 
@@ -213,7 +213,6 @@ class Strangler:
         GLOBAL_CONFIG = self.config
 
         # Following code has hard-coded values as of now
-        # TODO: Make the values configurable
         # TODO (overall):
         #       - (Done) Add auto-login for TOTP
         #       - (Done) Add market entry logic
@@ -225,11 +224,14 @@ class Strangler:
         #       - (Done) Add logging for sample run
         #       - [Optional] Add backtesting -- will help with testing
         #       - Testing ------
-        #       - Add CLI setup for automation triggering
+        #       - (Done) Add CLI setup for automation triggering
         #       - (Done; sort-of) [Advanced] Add program termination after market closure to save PC resources
         #       - (Done; with assumptions)[Advanced] Account for cookie conflict with browser login
         #       - [Advanced] Solve the bug where current expiry day is not account for on Thursdays
-        # TODO (later): Figure out how to account for token refresh in-between
+        # Assumptions to be verified:
+        #       - Last price API works
+        #       - Connection termination in-between doesn't break the execution
+        #       - The end of the day execution happens for closure
         nifty_option_gap = 100
         now = datetime.now()
 
