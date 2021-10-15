@@ -11,6 +11,7 @@ from src.apps.kite.controllers.positions import PositionsController
 from src.apps.kite.controllers.instruments import InstrumentsController
 from src.apps.kite.controllers.options import OptionsController
 from src.apps.kite.controllers.users import UsersController
+from src.apps.kite.models.positions import PositionModel
 from src.apps.settings.controllers.config import ConfigController
 from src.strategies.strangling.models import ConfigModel, ConfigV2Model
 from src.logger import LOGGER
@@ -28,24 +29,70 @@ STYLE = style_from_dict({
 OPTIONS_TICKERSYMBOL_DATETIME_FORMAT = '%y%b%d'
 STOCK_OPTIONS_TICKERSYMBOL_DATETIME_FORMAT = '%d%b'
 
-POSITIONS = []
-GLOBAL_CONFIG = None
+POSITIONS_DICT = {}
+GLOBAL_CONFIG: ConfigV2Model = None
 
 
 def on_ticks(ws, ticks):
-    # Callback to receive ticks.
-    LOGGER.info('Ticks: {}'.format(ticks))
     # TODO: Add the check for the stoploss and exit the trade
+    global GLOBAL_CONFIG
+    now = datetime.now()
 
+    # Exit the strategy to book the pnl for the day
+    if now.hour > 3 and now.minute > 15:
+        total_pnl = sum([position.pnl for position in POSITIONS_DICT.values()])
+
+        LOGGER.info('Booking the profit for the day: %.2f' % total_pnl)
+
+        if not GLOBAL_CONFIG.is_mock_run:
+            for position in POSITIONS_DICT.values():
+                PositionsController.exit_position(position=position)
+
+        ws.close()
+
+        return
+
+    for tick in ticks:
+        position: PositionModel = POSITIONS_DICT[tick['instrument_token']]
+
+        if position.tradingsymbol.endswith('PE'):
+            position.pnl = (position.average_price - tick['last_price']) * position.quantity
+        elif position.tradingsymbol.endswith('CE'):
+            position.pnl = (tick['last_price'] - position.average_price) * position.quantity
+        else:
+            raise ValueError('Unexpected tickersymbol found: %s' % position.tradingsymbol)
+
+    total_pnl = sum([position.pnl for position in POSITIONS_DICT.values()])
+
+    if total_pnl < GLOBAL_CONFIG.stoploss_pnl:
+        LOGGER.info(
+            'Exiting the positions; condition met; stoploss_pnl: %d, current pnl: %.2f' % (
+                GLOBAL_CONFIG.stoploss_pnl, total_pnl
+            )
+        )
+
+        if not GLOBAL_CONFIG.is_mock_run:
+            for position in POSITIONS_DICT.values():
+                PositionsController.exit_position(position=position)
+
+        ws.close()
+
+        return
 
 def on_connect(ws, response):
     # Callback on successful connect.
     # Subscribe to a list of instrument_tokens (RELIANCE and ACC here).
     # TODO: Add the instrument token fetcher based on tickersymbol
-    ws.subscribe([738561, 5633])
+    global POSITIONS
 
-    # Set RELIANCE to tick in `full` mode.
-    ws.set_mode(ws.MODE_FULL, [738561])
+    instrument_token_dict = InstrumentsController.get_instrument_token_dict()
+
+    position_tokens = [instrument_token_dict[position.tradingsymbol] for position in POSITIONS_DICT.keys()]
+
+    ws.subscribe(position_tokens)
+
+    # Set all instruments to tick in `full` mode.
+    ws.set_mode(ws.MODE_FULL, position_tokens)
 
 
 def on_close(ws, code, reason):
@@ -68,6 +115,7 @@ class Strangler:
 
         # TODO: Verify if the following works correctly
         instrument_price = InstrumentsController.get_last_trading_price(tickersymbol=tickersymbol)
+        instrument_token_dict = InstrumentsController.get_instrument_token_dict()
 
         low_sell_price = Utilities.round_nearest(number=instrument_price - strangle_gap, unit=option_gap, direction='down')
         high_sell_price = Utilities.round_nearest(number=instrument_price + strangle_gap, unit=option_gap, direction='up')
@@ -84,20 +132,29 @@ class Strangler:
         low_option = options_dict['%s%s%sPE' % (tickersymbol, next_thursday.strftime(STOCK_OPTIONS_TICKERSYMBOL_DATETIME_FORMAT).upper(), low_sell_price)]
 
         if self.config.is_mock_run:
-            POSITIONS += [high_option, low_option]
+            POSITIONS_DICT.update({
+                instrument_token_dict[high_option.tradingsymbol]: high_option,
+                instrument_token_dict[low_option.tradingsymbol]: low_option
+            })
 
-            return POSITIONS
+            LOGGER.info('Sold upper option: ', high_option)
+            LOGGER.info('Sold upper option: ', low_option)
+
+            return POSITIONS_DICT
 
         OptionsController.sell_option(option=high_option)
         OptionsController.sell_option(option=low_option)
+
+        LOGGER.info('Sold upper option: ', high_option)
+        LOGGER.info('Sold upper option: ', low_option)
 
         positions = PositionsController.get_positions()
 
         for position in positions:
             if position.tradingsymbol in [high_option.tradingsymbol, low_option.tradingsymbol]:
-                POSITIONS.append(position)
+                POSITIONS_DICT[instrument_token_dict[position.tradingsymbol]] = position
 
-        return POSITIONS
+        return POSITIONS_DICT
 
     def get_config(self):
         questions = [
@@ -113,13 +170,13 @@ class Strangler:
             {
                 'type': 'input',
                 'name': 'strangle_gap',
-                'message': 'Gap of strangle in units',
+                'message': 'Gap of strangle in indice points',
                 'default': '200'
             },
             {
                 'type': 'input',
                 'name': 'stoploss_pnl',
-                'message': 'Stoploss PnL',
+                'message': 'Stoploss PnL (please provide the absolute value)',
                 'default': '1000'
             },
             {
@@ -133,7 +190,7 @@ class Strangler:
         config = prompt(questions=questions, style=STYLE)
 
         config['strangle_gap'] = int(config['strangle_gap'])
-        config['stoploss_pnl'] = int(config['stoploss_pnl'])
+        config['stoploss_pnl'] = -1 * int(config['stoploss_pnl'])
 
         return from_dict(data_class=ConfigV2Model, data=config)
 
@@ -148,11 +205,20 @@ class Strangler:
         # Following code has hard-coded values as of now
         # TODO: Make the values configurable
         # TODO (overall):
-        #       - Make cookie generation configurable
-        #       - Add automatic cookie generation
-        #       - Add stoploss execution
-        #       - Add websocket subscription for instruments
+        #       - (Done) Add auto-login for TOTP
+        #       - (Done) Add market entry logic
+        #       - (Done) Add configuration for stoploss and mock runs
+        #       - (Done) Add realtime subscription for instruments
+        #       - (Done) Add stoploss execution
+        #       - (Done) Add exit strategy given the timestamp
+        #       - (Done) Testing ------
         #       - Add logging for sample run
+        #       - [Optional] Add backtesting -- will help with testing
+        #       - Testing ------
+        #       - Add CLI setup for automation triggering
+        #       - (Done; sort-of) [Advanced] Add program termination after market closure to save PC resources
+        #       - [Advanced] Account for cookie conflict with browser login
+        #       - [Advanced] Solve the bug where current expiry day is not account for on Thursdays
         # TODO (later): Figure out how to account for token refresh in-between
         nifty_option_gap = 100
         now = datetime.now()
