@@ -5,6 +5,8 @@ from datetime import date, datetime, timedelta
 from typing import Union
 from dateutil.relativedelta import relativedelta, TH
 
+from src.constants import MARKET_HOLIDAYS_ALTERNATES
+
 TRADINGSYMBOL_META = re.compile('(?P<instrument>[A-Z]+)(?P<datetime>[A-Z0-9]{5})(?P<type>[A-Z0-9]+)')
 
 
@@ -123,7 +125,12 @@ def get_last_thursday_for_derivative(dt: Union[str, date, datetime]):
 
             break
 
-    return t
+    date_val = date(t.year, t.month, t.day)
+
+    if date_val in MARKET_HOLIDAYS_ALTERNATES:
+        return MARKET_HOLIDAYS_ALTERNATES[date_val].option_expiry
+
+    return date_val
 
 
 def get_next_closest_thursday(dt: Union[date, datetime]):
@@ -135,7 +142,14 @@ def get_next_closest_thursday(dt: Union[date, datetime]):
     else:
         offset = 6 + thursday - current_day
 
-    return dt + timedelta(days=offset)
+    date_val = dt + timedelta(days=offset)
+
+    date_val = date(date_val.year, date_val.month, date_val.day)
+
+    if date_val in MARKET_HOLIDAYS_ALTERNATES:
+        return MARKET_HOLIDAYS_ALTERNATES[date_val].option_expiry
+
+    return date_val
 
 
 def divide_chunks(input_list: list, chunk_size: int):

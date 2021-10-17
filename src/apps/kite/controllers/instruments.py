@@ -124,7 +124,7 @@ class InstrumentsController:
         return InstrumentsController.get_instrument_price_details(tickersymbol=tickersymbol).close
 
     @staticmethod
-    def get_instrument_candles(tickersymbol: str, from_date: date = None, to_date: date = None) -> List[CandleModel]:
+    def get_instrument_candles(tickersymbol: str, granularity: str = 'day', from_date: date = None, to_date: date = None) -> List[CandleModel]:
         insturment_token_dict = InstrumentsController.get_instrument_token_dict()
 
         # Following is documented here: https://kite.trade/docs/connect/v3/historical/
@@ -144,8 +144,9 @@ class InstrumentsController:
         instrument_token = insturment_token_dict[tickersymbol] if tickersymbol in insturment_token_dict else tickersymbol_backup[tickersymbol]
 
         response = requests.get(
-            'https://kite.zerodha.com/oms/instruments/historical/%(instrument_token)s/day?user_id=%(user_id)s&oi=1&from=%(from)s&to=%(to)s' % {
+            'https://kite.zerodha.com/oms/instruments/historical/%(instrument_token)s/%(granularity)s?user_id=%(user_id)s&oi=1&from=%(from)s&to=%(to)s' % {
                 'instrument_token': instrument_token,
+                'granularity': granularity,
                 'user_id': UsersController.get_current_user().user_id,
                 'from': from_date.strftime('%Y-%m-%d'),
                 'to': to_date.strftime('%Y-%m-%d')
@@ -171,6 +172,7 @@ class InstrumentsController:
             'NIFTY 50': 'NIFTY'
         }
         tickersymbol = instrument_map_dict.get(instrument.tickersymbol, instrument.tickersymbol)
+        weekly_option_instruments = set(['NIFTY'])
 
         response = requests.get(
             'https://api.sensibull.com/v1/instruments/%s' % tickersymbol
@@ -182,7 +184,9 @@ class InstrumentsController:
         if on_date:
             return HistoricalOptionalsController.get_historical_data(
                 tickersymbol=tickersymbol,
-                expiry_date=Utilities.get_last_thursday_for_derivative(dt=on_date + timedelta(days=30)),
+                expiry_date=
+                    Utilities.get_next_closest_thursday(dt=on_date) if tickersymbol in weekly_option_instruments \
+                        else Utilities.get_last_thursday_for_derivative(dt=on_date + timedelta(days=30)),
                 from_date=on_date,
                 to_date=on_date
             )

@@ -15,7 +15,7 @@ FLOAT_FIELDS = set(['strike_price', 'open', 'high', 'low', 'close', 'ltp', 'sett
 
 
 class OptionsController:
-    @Cache
+    # @Cache
     @staticmethod
     def get_historical_data(tickersymbol: str, expiry_date: date, strike_price: float = '', option_types: str = ['PE', 'CE'], from_date: date = None, to_date: date = None) -> List[HistoricalOptionModel]:
         if not from_date:
@@ -27,6 +27,7 @@ class OptionsController:
         data = []
         instrument_type_map = {
             'BANKNIFTY': 'OPTIDX',
+            'NIFTY': 'OPTIDX',
             'default': 'OPTSTK'
         }
 

@@ -1,5 +1,7 @@
+from copy import deepcopy
 import re
-from datetime import datetime, timedelta
+from datetime import date, datetime, timedelta
+from typing import List
 from urllib.parse import quote_plus
 
 import numpy
@@ -11,6 +13,7 @@ from src.apps.kite.controllers.positions import PositionsController
 from src.apps.kite.controllers.instruments import InstrumentsController
 from src.apps.kite.controllers.options import OptionsController
 from src.apps.kite.controllers.users import UsersController
+from src.apps.kite.models.instruments import CandleModel
 from src.apps.kite.models.positions import PositionModel
 from src.apps.settings.controllers.config import ConfigController
 from src.strategies.strangling.models import ConfigModel, ConfigV2Model, MockPositionModel
@@ -33,9 +36,9 @@ POSITIONS_DICT = {}
 GLOBAL_CONFIG: ConfigV2Model = None
 
 
-def on_ticks(ws, ticks):
-    # TODO: Add the check for the stoploss and exit the trade
+def process_ticks(ticks: list) -> bool:
     global GLOBAL_CONFIG
+
     now = datetime.now()
 
     # Exit the strategy to book the pnl for the day
@@ -48,9 +51,7 @@ def on_ticks(ws, ticks):
             for position in POSITIONS_DICT.values():
                 PositionsController.exit_position(position=position)
 
-        ws.close()
-
-        return
+        return True
 
     for tick in ticks:
         position: PositionModel = POSITIONS_DICT[tick['instrument_token']]
@@ -75,9 +76,15 @@ def on_ticks(ws, ticks):
             for position in POSITIONS_DICT.values():
                 PositionsController.exit_position(position=position)
 
+        return True
+
+def on_ticks(ws, ticks):
+    # TODO: Add the check for the stoploss and exit the trade
+    is_breaking_required = process_ticks(ticks=ticks)
+
+    if is_breaking_required:
         ws.close()
 
-        return
 
 def on_connect(ws, response):
     # Callback on successful connect.
@@ -103,24 +110,45 @@ class Strangler:
     def __init__(self, config: ConfigV2Model = None):
         self.config = config
 
-    def _enter_market(self, option_gap: int):
+    def _enter_market(self, option_gap: int, on_date: date = None):
         global POSITIONS
 
         tickersymbol = self.config.tickersymbol
         strangle_gap = self.config.strangle_gap
 
-        today = datetime.today()
+        today = datetime.today() if not on_date else on_date
 
         # TODO: Verify if the following works correctly
-        instrument_price = InstrumentsController.get_last_trading_price(tickersymbol=tickersymbol)
+        if on_date:
+            instrument_price = InstrumentsController.get_instrument_price_details(tickersymbol=tickersymbol, on_date=on_date).open
+        else:
+            instrument_price = InstrumentsController.get_last_trading_price(tickersymbol=tickersymbol)
+
         instrument_token_dict = InstrumentsController.get_instrument_token_dict()
 
         low_sell_price = Utilities.round_nearest(number=instrument_price - strangle_gap, unit=option_gap, direction='down')
         high_sell_price = Utilities.round_nearest(number=instrument_price + strangle_gap, unit=option_gap, direction='up')
 
-        instrument = InstrumentsController.get_instrument(tickersymbol=tickersymbol)
-        options = InstrumentsController.get_options_chain(instrument=instrument)
-        options_dict = dict((option.tradingsymbol, option) for option in options)
+        instrument = InstrumentsController.get_instrument(tickersymbol=tickersymbol, on_date=on_date)
+        options = InstrumentsController.get_options_chain(instrument=instrument, on_date=on_date)
+
+        if on_date:
+            options_dict = {}
+
+            for option in options:
+                symbol = '%s%s%s%s' % (
+                    option.tradingsymbol, ''.join(option.expiry.split('-')[:2]).upper(),
+                    int(option.strike_price) if option.strike_price.is_integer() else option.strike_price,
+                    option.instrument_type
+                )
+
+                option.tradingsymbol = symbol
+
+                setattr(option, 'instrument_token', 0)
+
+                options_dict[symbol] = option
+        else:
+            options_dict = dict((option.tradingsymbol, option) for option in options)
 
         next_thursday = Utilities.get_next_closest_thursday(dt=today)
 
@@ -129,7 +157,7 @@ class Strangler:
 
         if self.config.is_mock_run:
             POSITIONS_DICT.update({
-                instrument_token_dict[high_option.tradingsymbol]: from_dict(
+                high_option.tradingsymbol: from_dict(
                     data_class=MockPositionModel,
                     data={
                         'tradingsymbol': high_option.tradingsymbol,
@@ -137,7 +165,7 @@ class Strangler:
                         'pnl': 0.0
                     }
                 ),
-                instrument_token_dict[low_option.tradingsymbol]: from_dict(
+                low_option.tradingsymbol: from_dict(
                     data_class=MockPositionModel,
                     data={
                         'tradingsymbol': low_option.tradingsymbol,
@@ -258,6 +286,41 @@ class Strangler:
         # Infinite loop on the main thread. Nothing after this will run.
         # You have to use the pre-defined callbacks to manage subscriptions.
         kws.connect()
+
+    def get_backtest_config(self) -> ConfigV2Model:
+        config = {
+            'tickersymbol': 'NIFTY',
+            'strangle_gap': 200,
+            'stoploss_pnl': -1000,
+            'is_mock_run': True
+        }
+
+        return from_dict(data_class=ConfigV2Model, data=config)
+
+    def backtest(self, from_date: date, to_date: date):
+        global POSITIONS_DICT
+
+        self.config = self.get_backtest_config()
+        nifty_option_gap = 100
+
+        if self.config.tickersymbol != 'NIFTY':
+            raise NotImplementedError('The program has only bee implemented for NIFTY as of now.')
+
+        current_date = from_date
+
+        while current_date <= to_date:
+            if current_date.weekday() in [5, 6]:
+                LOGGER.info('Found weekend, not trading...')
+
+                current_date += timedelta(days=1)
+
+                continue
+
+            self._enter_market(option_gap=nifty_option_gap, on_date=current_date)
+
+            # Figure out the pnl based on the close value of the option
+
+            current_date += timedelta(days=1)
 
     def _get_trading_width(self, tickersymbol: str):
         today = datetime.today()

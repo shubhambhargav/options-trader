@@ -10,6 +10,7 @@ from dacite.core import from_dict
 # Following have been taken as static values since the data is not publicly avaiable
 # margin calculation is primarily taken as a percentage of backup money of current data
 OPTION_DATA_MAP = {
+    'NIFTY': { 'margin_bckup_ratio': 1/8, 'lot_size': 50 },
     'ASIANPAINT': { 'margin_bckup_ratio': 1/8, 'lot_size': 300 },
     'BANDHANBANK': { 'margin_bckup_ratio': 1/2.6, 'lot_size': 1800 },
     'BHARTIARTL': { 'margin_bckup_ratio': 1/5.5,  'lot_size': 1886 },
