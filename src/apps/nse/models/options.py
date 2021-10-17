@@ -3,38 +3,11 @@ from datetime import datetime
 from src.apps.kite.models.orders import OrderModel
 from src.apps.kite.models.positions import PositionModel
 from src.apps.kite.models.instruments import EnrichedInstrumentModel, InstrumentModel
+from src.constants import OPTION_DATA_MAP
 from typing import Any, List, Optional, Union
 
 from dacite.core import from_dict
 
-# Following have been taken as static values since the data is not publicly avaiable
-# margin calculation is primarily taken as a percentage of backup money of current data
-OPTION_DATA_MAP = {
-    'NIFTY': { 'margin_bckup_ratio': 1/8, 'lot_size': 50 },
-    'ASIANPAINT': { 'margin_bckup_ratio': 1/8, 'lot_size': 300 },
-    'BANDHANBANK': { 'margin_bckup_ratio': 1/2.6, 'lot_size': 1800 },
-    'BHARTIARTL': { 'margin_bckup_ratio': 1/5.5,  'lot_size': 1886 },
-    'COALINDIA': { 'margin_bckup_ratio': 1/6, 'lot_size': 4200 },
-    'DRREDDY': { 'margin_bckup_ratio': 1/9, 'lot_size': 125 },
-    'HDFC': { 'margin_bckup_ratio': 1/5.8, 'lot_size': 300 },
-    'HDFCBANK': { 'margin_bckup_ratio': 1/9, 'lot_size': 550 },
-    'HEROMOTOCO': { 'margin_bckup_ratio': 1/7, 'lot_size': 300 },
-    'HINDUNILVR': { 'margin_bckup_ratio': 1/8.5, 'lot_size': 300 },
-    'ICICIBANK': { 'margin_bckup_ratio': 1/7, 'lot_size': 1375 },
-    'INFY': { 'margin_bckup_ratio': 1/8.5, 'lot_size': 600 },
-    'ITC': { 'margin_bckup_ratio': 1/6, 'lot_size': 3200 },
-    'KOTAKBANK': { 'margin_bckup_ratio': 1/5.5, 'lot_size': 400 },
-    'M&MFIN': { 'margin_bckup_ratio': 1/5, 'lot_size': 4000 },
-    'MARUTI': { 'margin_bckup_ratio': 1/6, 'lot_size': 100 },
-    'MRF': { 'margin_bckup_ratio': 1/6, 'lot_size': 10 },
-    'NESTLEIND': { 'margin_bckup_ratio': 1/9, 'lot_size': 50 },
-    'PVR': { 'margin_bckup_ratio': 1/6, 'lot_size': 407 },
-    'PIDILITIND': { 'margin_bckup_ratio': 1/6, 'lot_size': 500 },
-    'RELIANCE': { 'margin_bckup_ratio': 1/6, 'lot_size': 250 },
-    'TATACHEM': { 'margin_bckup_ratio': 1/7, 'lot_size': 1000 },
-    'TCS': { 'margin_bckup_ratio': 1/7, 'lot_size': 300 },
-    'TITAN': { 'margin_bckup_ratio': 1/7, 'lot_size': 375 }
-}
 OPTIONS_EXPIRY_DATETIME_FORMAT = '%d-%b-%Y'
 
 
@@ -101,11 +74,11 @@ class HistoricalOptionModel:
         if not OPTION_DATA_MAP.get(self.tickersymbol):
             raise ValueError('%s not configured for lot size in historical data' % self.tickersymbol)
 
-        self.lot_size = OPTION_DATA_MAP[self.tickersymbol]['lot_size']
+        self.lot_size = OPTION_DATA_MAP[self.tickersymbol].lot_size
         self.backup_money = self.strike_price * self.lot_size
         self.margin = from_dict(
             data_class=HistoricalOptionMarginModel,
-            data={ 'total': OPTION_DATA_MAP[self.tickersymbol]['margin_bckup_ratio'] * self.backup_money }
+            data={ 'total': OPTION_DATA_MAP[self.tickersymbol].margin_backup_ratio * self.backup_money }
         )
         self.profit = self.last_price * self.lot_size
         self.time_to_expiry_in_days = (

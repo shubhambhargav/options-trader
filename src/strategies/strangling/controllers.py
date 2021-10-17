@@ -13,8 +13,8 @@ from src.apps.kite.controllers.positions import PositionsController
 from src.apps.kite.controllers.instruments import InstrumentsController
 from src.apps.kite.controllers.options import OptionsController
 from src.apps.kite.controllers.users import UsersController
-from src.apps.kite.models.instruments import CandleModel
 from src.apps.kite.models.positions import PositionModel
+from src.apps.nse.models.options import HistoricalOptionModel
 from src.apps.settings.controllers.config import ConfigController
 from src.strategies.strangling.models import ConfigModel, ConfigV2Model, MockPositionModel
 from src.logger import LOGGER
@@ -38,6 +38,7 @@ GLOBAL_CONFIG: ConfigV2Model = None
 
 def process_ticks(ticks: list) -> bool:
     global GLOBAL_CONFIG
+    global POSITIONS_DICT
 
     now = datetime.now()
 
@@ -79,7 +80,6 @@ def process_ticks(ticks: list) -> bool:
         return True
 
 def on_ticks(ws, ticks):
-    # TODO: Add the check for the stoploss and exit the trade
     is_breaking_required = process_ticks(ticks=ticks)
 
     if is_breaking_required:
@@ -89,8 +89,7 @@ def on_ticks(ws, ticks):
 def on_connect(ws, response):
     # Callback on successful connect.
     # Subscribe to a list of instrument_tokens (RELIANCE and ACC here).
-    # TODO: Add the instrument token fetcher based on tickersymbol
-    global POSITIONS
+    global POSITIONS_DICT
 
     position_tokens = [position.instrument_token for position in POSITIONS_DICT.values()]
 
@@ -178,6 +177,9 @@ class Strangler:
             LOGGER.info('Sold upper option: %s' % high_option)
             LOGGER.info('Sold lower option: %s' % low_option)
 
+            if self.config.is_backtest:
+                return [high_option, low_option]
+
             return POSITIONS_DICT
 
         OptionsController.sell_option(option=high_option)
@@ -260,7 +262,7 @@ class Strangler:
         #       - Last price API works
         #       - Connection termination in-between doesn't break the execution
         #       - The end of the day execution happens for closure
-        nifty_option_gap = 100
+        nifty_option_gap = 50
         now = datetime.now()
 
         if self.config.tickersymbol != 'NIFTY':
@@ -292,7 +294,8 @@ class Strangler:
             'tickersymbol': 'NIFTY',
             'strangle_gap': 200,
             'stoploss_pnl': -1000,
-            'is_mock_run': True
+            'is_mock_run': True,
+            'is_backtest': True
         }
 
         return from_dict(data_class=ConfigV2Model, data=config)
@@ -301,26 +304,42 @@ class Strangler:
         global POSITIONS_DICT
 
         self.config = self.get_backtest_config()
-        nifty_option_gap = 100
+        nifty_option_gap = 50
 
         if self.config.tickersymbol != 'NIFTY':
             raise NotImplementedError('The program has only bee implemented for NIFTY as of now.')
 
         current_date = from_date
+        total_pnl = 0
 
         while current_date <= to_date:
+            LOGGER.info('Processing for %s' % current_date)
+
             if current_date.weekday() in [5, 6]:
-                LOGGER.info('Found weekend, not trading...')
+                LOGGER.info('Found weekend %s, not trading...' % current_date)
 
                 current_date += timedelta(days=1)
 
                 continue
 
-            self._enter_market(option_gap=nifty_option_gap, on_date=current_date)
+            traded_options: List[HistoricalOptionModel] = self._enter_market(option_gap=nifty_option_gap, on_date=current_date)
 
-            # Figure out the pnl based on the close value of the option
+            pnl = 0
+
+            for option in traded_options:
+                pnl += (option.open - option.close) * option.lot_size
+
+            if pnl < self.config.stoploss_pnl:
+                pnl = self.config.stoploss_pnl
+
+            total_pnl += pnl
+
+            LOGGER.info('PnL for %s: %.2f' % (current_date, pnl))
+            LOGGER.info('------------------------------------------------')
 
             current_date += timedelta(days=1)
+
+        LOGGER.info('Total PnL: %.2f' % total_pnl)
 
     def _get_trading_width(self, tickersymbol: str):
         today = datetime.today()

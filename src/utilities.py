@@ -134,13 +134,13 @@ def get_last_thursday_for_derivative(dt: Union[str, date, datetime]):
 
 
 def get_next_closest_thursday(dt: Union[date, datetime]):
-    thursday = 4  # weekday value of Thursday
+    thursday = 3  # weekday value of Thursday
     current_day = dt.weekday()
 
-    if current_day < thursday:
+    if current_day <= thursday:
         offset = thursday - current_day
     else:
-        offset = 6 + thursday - current_day
+        offset = 7 + thursday - current_day
 
     date_val = dt + timedelta(days=offset)
 

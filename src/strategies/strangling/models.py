@@ -15,6 +15,7 @@ class ConfigV2Model:
     strangle_gap: int = 200
     stoploss_pnl: int = -1000
     is_mock_run: bool = False
+    is_backtest: bool = False
 
 
 @dataclass
