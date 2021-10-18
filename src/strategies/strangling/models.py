@@ -16,6 +16,7 @@ class ConfigV2Model:
     stoploss_pnl: int = -1000
     is_mock_run: bool = False
     is_backtest: bool = False
+    number_of_lots: int = 1
 
 
 @dataclass

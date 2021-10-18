@@ -21,6 +21,7 @@ STARTEGY_MAP = {
 @click.option('--strangle_gap', type=int, help='Points to be strangled with')
 @click.option('--stoploss_pnl', type=int, help='PnL to stop at')
 @click.option('--is_mock_run', type=bool, help='To run as a mock or not?')
+@click.option('--number_of_lots', type=int, help='Number of lots to be traded')
 def main(*args, **kwargs):
     LOGGER.info('Welcome to your personal trader!')
 

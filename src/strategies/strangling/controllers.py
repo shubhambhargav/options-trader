@@ -36,6 +36,17 @@ POSITIONS_DICT = {}
 GLOBAL_CONFIG: ConfigV2Model = None
 
 
+def _get_weekly_option_tickersymbol(instrument: str, option_type: str, expiry: date, price: float):
+    return '%(instrument)s%(expiry_year)s%(expiry_month)s%(expiry_day)s%(price)s%(option_type)s' % {
+        'instrument': instrument,
+        'expiry_year': expiry.strftime('%y'),
+        'expiry_month': expiry.strftime('%b').upper()[0],
+        'expiry_day': expiry.strftime('%d'),
+        'price': price,
+        'option_type': option_type
+    }
+
+
 def process_ticks(ticks: list) -> bool:
     global GLOBAL_CONFIG
     global POSITIONS_DICT
@@ -109,7 +120,7 @@ def on_connect(ws, response):
 def on_close(ws, code, reason):
     # On connection close stop the main loop
     # Reconnection will not happen after executing `ws.stop()`
-    ws.stop()
+    pass
 
 
 class Strangler:
@@ -158,8 +169,11 @@ class Strangler:
 
         next_thursday = Utilities.get_next_closest_thursday(dt=today)
 
-        high_option = options_dict['%s%s%sCE' % (tickersymbol, next_thursday.strftime(STOCK_OPTIONS_TICKERSYMBOL_DATETIME_FORMAT).upper(), high_sell_price)]
-        low_option = options_dict['%s%s%sPE' % (tickersymbol, next_thursday.strftime(STOCK_OPTIONS_TICKERSYMBOL_DATETIME_FORMAT).upper(), low_sell_price)]
+        high_option = options_dict[_get_weekly_option_tickersymbol(instrument=tickersymbol, option_type='CE', expiry=next_thursday, price=high_sell_price)]
+        low_option = options_dict[_get_weekly_option_tickersymbol(instrument=tickersymbol, option_type='PE', expiry=next_thursday, price=low_sell_price)]
+
+        high_option.lot_size = self.config.number_of_lots * high_option.lot_size
+        low_option.lot_size = self.config.number_of_lots * low_option.lot_size
 
         if self.config.is_mock_run:
             POSITIONS_DICT.update({
@@ -284,6 +298,7 @@ class Strangler:
 
             return
 
+        # TODO: Add the ability to resume the operations from already existing positions
         self._enter_market(option_gap=nifty_option_gap)
 
         kws = KiteTicker(
