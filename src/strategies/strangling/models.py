@@ -21,5 +21,7 @@ class ConfigV2Model:
 @dataclass
 class MockPositionModel:
     tradingsymbol: str
+    average_price: float
+    quantity: float
     instrument_token: int
     pnl: float

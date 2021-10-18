@@ -43,7 +43,7 @@ def process_ticks(ticks: list) -> bool:
     now = datetime.now()
 
     # Exit the strategy to book the pnl for the day
-    if now.hour > 3 and now.minute > 15:
+    if now.hour > 15 and now.minute > 15:
         total_pnl = sum([position.pnl for position in POSITIONS_DICT.values()])
 
         LOGGER.info('Booking the profit for the day: %.2f' % total_pnl)
@@ -55,12 +55,12 @@ def process_ticks(ticks: list) -> bool:
         return True
 
     for tick in ticks:
-        position: PositionModel = POSITIONS_DICT[tick['instrument_token']]
+        position: PositionModel = POSITIONS_DICT[str(tick['instrument_token'])]
 
         if position.tradingsymbol.endswith('PE'):
-            position.pnl = (position.average_price - tick['last_price']) * position.quantity
+            position.pnl = (position.average_price - tick['last_price']) *  abs(position.quantity)
         elif position.tradingsymbol.endswith('CE'):
-            position.pnl = (tick['last_price'] - position.average_price) * position.quantity
+            position.pnl = (tick['last_price'] - position.average_price) * abs(position.quantity)
         else:
             raise ValueError('Unexpected tickersymbol found: %s' % position.tradingsymbol)
 
@@ -80,7 +80,14 @@ def process_ticks(ticks: list) -> bool:
         return True
 
 def on_ticks(ws, ticks):
-    is_breaking_required = process_ticks(ticks=ticks)
+    try:
+        is_breaking_required = process_ticks(ticks=ticks)
+    except Exception as ex:
+        LOGGER.error(ex)
+
+        ws.close()
+
+        return
 
     if is_breaking_required:
         ws.close()
@@ -156,19 +163,23 @@ class Strangler:
 
         if self.config.is_mock_run:
             POSITIONS_DICT.update({
-                high_option.tradingsymbol: from_dict(
+                instrument_token_dict[high_option.tradingsymbol]: from_dict(
                     data_class=MockPositionModel,
                     data={
                         'tradingsymbol': high_option.tradingsymbol,
+                        'average_price': high_option.last_price,
                         'instrument_token': high_option.instrument_token,
+                        'quantity': high_option.lot_size,
                         'pnl': 0.0
                     }
                 ),
-                low_option.tradingsymbol: from_dict(
+                instrument_token_dict[low_option.tradingsymbol]: from_dict(
                     data_class=MockPositionModel,
                     data={
                         'tradingsymbol': low_option.tradingsymbol,
+                        'average_price': low_option.last_price,
                         'instrument_token': low_option.instrument_token,
+                        'quantity': low_option.lot_size,
                         'pnl': 0.0
                     }
                 )
