@@ -34,6 +34,7 @@ STOCK_OPTIONS_TICKERSYMBOL_DATETIME_FORMAT = '%d%b'
 
 POSITIONS_DICT = {}
 GLOBAL_CONFIG: ConfigV2Model = None
+DONE_CODE = 1000
 
 
 def _get_weekly_option_tickersymbol(instrument: str, option_type: str, expiry: date, price: float):
@@ -90,18 +91,18 @@ def process_ticks(ticks: list) -> bool:
 
         return True
 
-def on_ticks(ws, ticks):
+def on_ticks(ws: KiteTicker, ticks):
     try:
         is_breaking_required = process_ticks(ticks=ticks)
     except Exception as ex:
         LOGGER.error(ex)
 
-        ws.close()
+        ws.close(code=DONE_CODE)
 
         return
 
     if is_breaking_required:
-        ws.close()
+        ws.close(code=DONE_CODE)
 
 
 def on_connect(ws, response):
@@ -120,7 +121,9 @@ def on_connect(ws, response):
 def on_close(ws, code, reason):
     # On connection close stop the main loop
     # Reconnection will not happen after executing `ws.stop()`
-    pass
+    if code == DONE_CODE:
+        # Closing the connection once the stoploss is met
+        ws.stop()
 
 
 class Strangler:
