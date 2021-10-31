@@ -17,7 +17,7 @@ KITE_AUTH_TOKEN = ConfigController.get_config().kite_auth_token
 
 class GTTController:
     @staticmethod
-    def get_gtts(tickersymbol: str = None) -> List[GTTModel]:
+    def get_gtts(tickersymbol: str = None, filter_is_active: bool = True) -> List[GTTModel]:
         headers = {
             'Authorization': f'enctoken {KITE_AUTH_TOKEN}'
         }
@@ -30,16 +30,18 @@ class GTTController:
         if response.status_code != 200:
             raise ValueError('Failed to get existing GTT from Kite')
 
-        if not tickersymbol:
-            return [from_dict(data_class=GTTModel, data=gtt) for gtt in response.json()['data']]
-
         gtts = []
 
         for gtt in response.json()['data']:
-            gtt = from_dict(data_class=GTTModel, data=gtt)
+            gtt_obj = from_dict(data_class=GTTModel, data=gtt)
 
-            if gtt.condition.tradingsymbol == tickersymbol:
-                gtts.append(gtt)
+            if filter_is_active and not gtt_obj.is_active:
+                continue
+
+            if tickersymbol and gtt.condition.tradingsymbol != tickersymbol:
+                continue
+
+            gtts.append(gtt_obj)
 
         return gtts
 
@@ -103,6 +105,8 @@ class GTTController:
                 LOGGER.debug('Found corresponding position for the GTT, skipping removal...')
 
                 continue
+
+            print(gtt)
 
             GTTController.delete_gtt(gtt=gtt)
 

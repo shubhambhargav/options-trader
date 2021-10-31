@@ -35,3 +35,7 @@ class GTTModel:
     parent_trigger: Any = None
     status: str = 'active'
     type: str = 'single'
+    is_active: bool = False
+
+    def __post_init__(self):
+        self.is_active = True if self.status == 'active' else False
