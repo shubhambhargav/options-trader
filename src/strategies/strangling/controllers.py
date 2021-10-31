@@ -67,6 +67,8 @@ def process_ticks(ticks: list) -> bool:
         return True
 
     for tick in ticks:
+        LOGGER.info(tick)
+
         position: PositionModel = POSITIONS_DICT[str(tick['instrument_token'])]
 
         if position.tradingsymbol.endswith('PE'):
