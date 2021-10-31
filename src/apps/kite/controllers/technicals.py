@@ -92,12 +92,12 @@ class TechnicalIndicatorsController:
                 l = df[low_column_name][i]
 
                 if is_far_from_level(l):
-                    levels.append((i, l))
+                    levels.append((i, -1, l))
             elif is_resistance(df, i):
                 l = df[high_column_name][i]
 
                 if is_far_from_level(l):
-                    levels.append((i, l))
+                    levels.append((i, 1, l))
 
         def plot_all():
             fig, ax = plt.subplots()
@@ -116,9 +116,10 @@ class TechnicalIndicatorsController:
             ax.xaxis.set_major_formatter(date_format)
             fig.autofmt_xdate()
             fig.tight_layout()
+
             for level in levels:
                 plt.hlines(
-                    level[1], xmin=new_df['timestamp'][level[0]], \
+                    level[2], xmin=new_df['timestamp'][level[0]], \
                     xmax=max(new_df['timestamp']), colors='blue'
                 )
             fig.show()

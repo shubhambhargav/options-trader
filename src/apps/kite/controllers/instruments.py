@@ -210,18 +210,10 @@ class InstrumentsController:
             support_and_resistance = TechnicalIndicatorsController.get_support_and_resistance(df=candles_df)
 
             if support_and_resistance:
-                # TODO: Make the following more readable
-                # it's the last price where support/resistance was found
-                if support_and_resistance[-1][1] > candles[-1].close:
-                    support_resistance_dict[instrument.tickersymbol] = {
-                        'last_support': support_and_resistance[-1][1],
-                        'last_resistance': support_and_resistance[-2][1]
-                    }
-                else:
-                    support_resistance_dict[instrument.tickersymbol] = {
-                        'last_support': support_and_resistance[-2][1],
-                        'last_resistance': support_and_resistance[-1][1]
-                    }
+                support_and_resistance[instrument.tickersymbol] = {
+                    'supports': [elem[2] for elem in support_and_resistance if elem[1] == -1],
+                    'resistances': [elem[2] for elem in support_and_resistance if elem[1] == 1],
+                }
 
             candles = [{**asdict(candle), **asdict(instrument)} for candle in candles]
             instrument_candles_df = pd.DataFrame.from_dict(data=candles)
@@ -261,8 +253,8 @@ class InstrumentsController:
             .join(last_buy_signal_df.set_index('tickersymbol'), on='tickersymbol', how='left') \
             .reset_index()
 
-        enriched_instrument_df['last_support'] = enriched_instrument_df['tickersymbol'].apply(lambda x: support_resistance_dict[x]['last_support'])
-        enriched_instrument_df['last_resistance'] = enriched_instrument_df['tickersymbol'].apply(lambda x: support_resistance_dict[x]['last_resistance'])
+        enriched_instrument_df['last_support'] = enriched_instrument_df['tickersymbol'].apply(lambda x: support_resistance_dict[x]['supports'][-1])
+        enriched_instrument_df['last_resistance'] = enriched_instrument_df['tickersymbol'].apply(lambda x: support_resistance_dict[x]['resistances'][-1])
 
         enriched_instrument_df['close_last_by_support'] = round(
             (enriched_instrument_df['close_last'] - enriched_instrument_df['last_support']) /
