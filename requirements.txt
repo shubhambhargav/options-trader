@@ -1,5 +1,5 @@
 autobahn[twisted,encryption,serialization,xbr]
-beautifulsoup4==2.2.1
+beautifulsoup4==4.10.0
 click==8.0.1
 dacite==1.6.0
 dataclasses-json==0.5.6

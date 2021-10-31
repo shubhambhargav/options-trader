@@ -210,7 +210,7 @@ class InstrumentsController:
             support_and_resistance = TechnicalIndicatorsController.get_support_and_resistance(df=candles_df)
 
             if support_and_resistance:
-                support_and_resistance[instrument.tickersymbol] = {
+                support_resistance_dict[instrument.tickersymbol] = {
                     'supports': [elem[2] for elem in support_and_resistance if elem[1] == -1],
                     'resistances': [elem[2] for elem in support_and_resistance if elem[1] == 1],
                 }
