@@ -2,7 +2,7 @@ import requests
 from dacite import from_dict
 
 from src.apps.settings.controllers import ConfigController
-from ..models import UserModel
+from src.apps.kite.models.users import MarginsModel, UserModel
 
 
 class UsersController:
@@ -26,3 +26,17 @@ class UsersController:
         user_data = response.json()['data']
 
         return from_dict(data_class=UserModel, data=user_data)
+
+    @staticmethod
+    def get_margins() -> MarginsModel:
+        response = requests.get(
+            'https://kite.zerodha.com/oms/user/margins',
+            headers={
+                'Authorization': f'enctoken {ConfigController.get_config().kite_auth_token}'
+            }
+        )
+
+        if response.status_code != 200:
+            raise ValueError('Unexpected response code found: %d, response: %s' % (response.status_code, response.text))
+
+        return from_dict(data_class=MarginsModel, data=response.json()['data'])

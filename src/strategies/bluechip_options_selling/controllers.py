@@ -1,6 +1,7 @@
 from collections import defaultdict
 from datetime import date, timedelta
 from io import open_code
+from src.apps.kite.controllers.users import UsersController
 from src.apps.kite.models.instruments import CandleModel, EnrichedInstrumentModel
 from src.apps.nse.models.options import HistoricalOptionModel
 from typing import List
@@ -312,9 +313,9 @@ class BackTester:
 
 
 class BluechipOptionsSeller:
-    def __init__(self, backtesting_enabled: bool = False):
+    def __init__(self, config: ConfigModel = None, backtesting_enabled: bool = False):
         self.backtesting_enabled = backtesting_enabled
-        self.config = None
+        self.config = config
 
     def get_config(self) -> ConfigModel:
         questions = [
@@ -551,7 +552,9 @@ class BluechipOptionsSeller:
         #   - Filter stocks based on technicals
         #   - Filter options based on filtered stocks
         #   - Place an order based on the backtesting algorithm
-        options = self._get_options()
+        LOGGER.info('Config: %s' % self.config)
+
+        margin = UsersController.get_margins()
 
     def run(self):
         if not self.config:
