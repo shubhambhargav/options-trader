@@ -8,6 +8,8 @@ import requests
 import pandas as pd
 from dacite import from_dict
 
+from src.logger import LOGGER
+
 from .users import UsersController
 
 import src.utilities as Utilities
@@ -117,7 +119,12 @@ class InstrumentsController:
             to_date=on_date
         )
 
-        return candles[0]
+        try:
+            return candles[0]
+        except IndexError as ex:
+            LOGGER.error('No trade found on %s for %s' % (on_date, tickersymbol))
+
+            raise(ex)
 
     @staticmethod
     def get_last_trading_price(tickersymbol: str) -> float:
@@ -205,9 +212,9 @@ class InstrumentsController:
                 from_date=on_date - timedelta(days=365) if on_date else None,
                 to_date=on_date if on_date else None
             )
-            candles_df = pd.DataFrame.from_dict(data=[asdict(candle) for candle in candles])
+            instrument_candles_df = pd.DataFrame.from_dict(data=[asdict(candle) for candle in candles])
 
-            support_and_resistance = TechnicalIndicatorsController.get_support_and_resistance(df=candles_df)
+            support_and_resistance = TechnicalIndicatorsController.get_support_and_resistance(df=instrument_candles_df)
 
             if support_and_resistance:
                 support_resistance_dict[instrument.tickersymbol] = {
@@ -253,18 +260,26 @@ class InstrumentsController:
             .join(last_buy_signal_df.set_index('tickersymbol'), on='tickersymbol', how='left') \
             .reset_index()
 
-        enriched_instrument_df['last_support'] = enriched_instrument_df['tickersymbol'].apply(lambda x: support_resistance_dict[x]['supports'][-1])
-        enriched_instrument_df['last_resistance'] = enriched_instrument_df['tickersymbol'].apply(lambda x: support_resistance_dict[x]['resistances'][-1])
+        enriched_instrument_df['last_support'] = enriched_instrument_df['tickersymbol'] \
+            .apply(
+                lambda x: support_resistance_dict[x]['supports'][-1] if support_resistance_dict[x]['supports'] else None
+            )
+        enriched_instrument_df['last_resistance'] = enriched_instrument_df['tickersymbol'] \
+            .apply(
+                lambda x: support_resistance_dict[x]['resistances'][-1] if support_resistance_dict[x]['resistances'] else None
+            )
 
-        enriched_instrument_df['close_last_by_support'] = round(
-            (enriched_instrument_df['close_last'] - enriched_instrument_df['last_support']) /
-                enriched_instrument_df['close_last'] * 100,
-            2
-        )
-        enriched_instrument_df['close_last_by_resistance'] = round(
-            (enriched_instrument_df['close_last'] - enriched_instrument_df['last_resistance']) /
-                enriched_instrument_df['close_last'] * 100,
-            2
-        )
+        enriched_instrument_df['close_last_by_support'] = enriched_instrument_df \
+            .apply(
+                lambda x: None if x.last_support is None \
+                    else round((x.close_last - x.last_support) / x.close_last * 100, 2),
+                axis=1
+            )
+        enriched_instrument_df['close_last_by_resistance'] = enriched_instrument_df \
+            .apply(
+                lambda x: None if x.last_resistance is None \
+                    else round((x.close_last - x.last_resistance) / x.close_last * 100, 2),
+                axis=1
+            )
 
         return [from_dict(data_class=EnrichedInstrumentModel, data=instrument) for instrument in enriched_instrument_df.to_dict('records')]

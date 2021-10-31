@@ -1,5 +1,5 @@
 from dataclasses import dataclass, field
-from typing import Any, Optional
+from typing import Any, Optional, Union
 
 from dataclasses_json import config, dataclass_json
 
@@ -43,7 +43,7 @@ class EnrichedInstrumentModel(StockOfInterest):
     rsi: float = 0
     close_last_by_min: float = 0
     close_last_by_avg: float = 0
-    last_support: float = 0
-    last_resistance: float = 0
-    close_last_by_support: float = 0
-    close_last_by_resistance: float = 0
+    last_support: Union[float, None] = 0
+    last_resistance: Union[float, None] = 0
+    close_last_by_support: Union[float, None] = 0
+    close_last_by_resistance: Union[float, None] = 0

@@ -1,6 +1,7 @@
 from collections import defaultdict
 from datetime import date, timedelta
-from src.apps.kite.models.instruments import CandleModel
+from io import open_code
+from src.apps.kite.models.instruments import CandleModel, EnrichedInstrumentModel
 from src.apps.nse.models.options import HistoricalOptionModel
 from typing import List
 
@@ -8,7 +9,7 @@ import emoji
 from PyInquirer import Token, Separator, prompt, style_from_dict
 from dacite import from_dict
 
-from .models import ConfigModel
+from .models import BackTestConfigModel, ConfigModel
 import src.utilities as Utilities
 from src.apps.kite.models import StockOfInterest, EnrichedOptionModel
 from src.apps.kite.controllers import (
@@ -33,14 +34,14 @@ OPTIONS_EXIT_PROFIT_PERCENTAGE_THRESHOLD = 90  # in percentage
 
 class BackTester:
     def __init__(self):
-        pass
+        self.config = None
 
     def get_stocks(self) -> List[StockOfInterest]:
         stocks_of_interest = [
-            'COALINDIA', 'ICICIBANK', 'HDFCBANK', 'KOTAKBANK', # 'BANDHANBNK',
+            'COALINDIA', 'ICICIBANK', 'HDFCBANK', 'KOTAKBANK', 'BANDHANBNK',
             'HEROMOTOCO', 'TITAN', 'ASIANPAINT', 'MRF', 'HINDUNILVR',
             'MARUTI', 'NESTLEIND', 'INFY', 'TCS', 'HDFC', 'DRREDDY', 'TATACHEM',
-            'RELIANCE', 'BHARTIARTL', # 'PVR'
+            'RELIANCE', 'BHARTIARTL', 'PVR'
         ]
 
         stocks = [{ 'tickersymbol': stock } for stock in stocks_of_interest]
@@ -65,6 +66,12 @@ class BackTester:
                     and stock.custom_filters.minimum_dip < ((instrument.last_price - option.strike) / instrument.last_price * 100) < stock.custom_filters.maximum_dip,
                 options
             ))
+
+            if not options:
+                LOGGER.debug('Processed for %s, no eligible options found' % stock.tickersymbol)
+
+                continue
+
             options = OptionsController.enrich_options(options=options, on_date=on_date)
 
             all_options += options
@@ -73,11 +80,66 @@ class BackTester:
 
         return all_options
 
+    def filter_instruments(self, instruments: List[EnrichedInstrumentModel]) -> List[EnrichedInstrumentModel]:
+        filtered_instruments = []
+
+        for instrument in instruments:
+            # Skip the instruments which:
+            #   - are already trading below last support because we don't know how low can they get
+            #   - have already reached the last resistance i.e. no expected room to grow
+            if instrument.close_last_by_resistance is None or instrument.close_last_by_support is None:
+                LOGGER.info(
+                    'Skipping instrument %s because insufficent data found: last support: %s, last resistance: %s' % (
+                        instrument.tickersymbol, instrument.close_last_by_support, instrument.close_last_by_resistance
+                    )
+                )
+
+                continue
+
+            if instrument.close_last_by_support < 0 or instrument.close_last_by_resistance > 0:
+                LOGGER.info(
+                    'Skipping instrument %s because of -ve support or +ve resistance from close: %.2f last support and %.2f last resistance' % (
+                        instrument.tickersymbol, instrument.close_last_by_support, instrument.close_last_by_resistance
+                    )
+                )
+
+                continue
+
+            support_resistance_gap = instrument.close_last_by_support + abs(instrument.close_last_by_resistance)
+
+            percentage_up_from_support = instrument.close_last_by_support / support_resistance_gap * 100
+
+            if percentage_up_from_support > self.config.entry_point_from_last_support:
+                LOGGER.info(
+                    'Skipping instrument %s because stock has already moved by %d percent from last support' % (
+                        instrument.tickersymbol, percentage_up_from_support
+                    )
+                )
+
+                continue
+
+            filtered_instruments.append(instrument)
+
+        return filtered_instruments
+
+    def get_config(self):
+        return from_dict(
+            data_class=BackTestConfigModel,
+            data={
+                'entry_day_before_expiry_in_days': 3,
+                'last_n_iterations': None,
+                'filter_stocks_by_technicals': True,
+                'entry_point_from_last_support': 50
+            }
+        )
+
     def run(self):
         stocks = self.get_stocks()
+        self.config = self.get_config()
 
-        entry_date = 20  # x days before the expiry
-        last_n_iterations = 3  # None depicts all
+        entry_date = self.config.entry_day_before_expiry_in_days  # x days before the expiry
+        last_n_iterations = self.config.last_n_iterations  # None depicts all
+        filter_stocks_by_technicals = self.config.filter_stocks_by_technicals
 
         days_of_expiry = [
             date(2020, 1, 30), date(2020, 2, 27), date(2020, 3, 26), date(2020, 4, 30),
@@ -88,7 +150,8 @@ class BackTester:
             date(2021, 9, 30)
         ]
         stock_market_holidays = [
-            date(2021, 9, 10)  # Ganesh Chaturthi
+            date(2020, 5, 25),  # not sure which holiday
+            date(2021, 9, 10),  # Ganesh Chaturthi
         ]
 
         days_of_trading = []
@@ -123,7 +186,17 @@ class BackTester:
         for trade_day in days_of_trading:
             print('Processing for %s, expiry: %s' % (trade_day['on_date'], trade_day['expiry']))
 
-            options = self._get_options(stocks=stocks, on_date=trade_day['on_date'])
+            instruments: List[EnrichedInstrumentModel] = InstrumentsController.enrich_instruments(instruments=stocks, on_date=trade_day['on_date'])
+            filtered_instruments = set([instrument.tickersymbol for instrument in  self.filter_instruments(instruments=instruments)])
+
+            if filter_stocks_by_technicals:
+                filtered_stocks = [stock for stock in stocks if stock.tickersymbol in filtered_instruments]
+
+                LOGGER.info('Filtered %d stocks from %d' % (len(filtered_stocks), len(stocks)))
+            else:
+                filtered_stocks = stocks
+
+            options = self._get_options(stocks=filtered_stocks, on_date=trade_day['on_date'])
 
             options = sorted(
                 list(

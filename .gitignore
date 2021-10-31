@@ -12,3 +12,4 @@ profiler.txt
 
 # Local cache
 .trader-cache/
+.test-runs/

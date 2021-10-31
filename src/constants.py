@@ -30,7 +30,7 @@ MARKET_HOLIDAYS_ALTERNATES: Dict[date, HolidayAlernateModel] = {
 OPTION_DATA_MAP = {
     'NIFTY': { 'margin_backup_ratio': 1/8, 'lot_size': 50 },
     'ASIANPAINT': { 'margin_backup_ratio': 1/8, 'lot_size': 300 },
-    'BANDHANBANK': { 'margin_backup_ratio': 1/2.6, 'lot_size': 1800 },
+    'BANDHANBNK': { 'margin_backup_ratio': 1/2.6, 'lot_size': 1800 },
     'BHARTIARTL': { 'margin_backup_ratio': 1/5.5,  'lot_size': 1886 },
     'COALINDIA': { 'margin_backup_ratio': 1/6, 'lot_size': 4200 },
     'DRREDDY': { 'margin_backup_ratio': 1/9, 'lot_size': 125 },
