@@ -41,7 +41,8 @@ class BackTester:
             'COALINDIA', 'ICICIBANK', 'HDFCBANK', 'KOTAKBANK', 'BANDHANBNK',
             'HEROMOTOCO', 'TITAN', 'ASIANPAINT', 'MRF', 'HINDUNILVR',
             'MARUTI', 'NESTLEIND', 'INFY', 'TCS', 'HDFC', 'DRREDDY', 'TATACHEM',
-            'RELIANCE', 'BHARTIARTL', 'PVR'
+            'RELIANCE', 'BHARTIARTL', 'PVR',
+            'HDFCAMC', 'ITC', 'M&MFIN',
         ]
 
         stocks = [{ 'tickersymbol': stock } for stock in stocks_of_interest]
@@ -126,16 +127,25 @@ class BackTester:
         return from_dict(
             data_class=BackTestConfigModel,
             data={
-                'entry_day_before_expiry_in_days': 3,
-                'last_n_iterations': None,
+                'available_margin': 1400000,  # 14 lakhs
+                'entry_day_before_expiry_in_days': 25,
+                'last_n_iterations': 3,
                 'filter_stocks_by_technicals': True,
-                'entry_point_from_last_support': 50
+                'filter_options_by_open_int': True,
+                'entry_point_from_last_support': 50,
+                'filter_options_min_percentage_dip': 8,
+                'filter_options_max_percentage_dip': 16,
+                'filter_options_min_profit': 2000,
+                'filter_options_max_profit': 15000,
+                'filter_options_min_open_int': 0
             }
         )
 
     def run(self):
         stocks = self.get_stocks()
         self.config = self.get_config()
+
+        print(self.config)
 
         entry_date = self.config.entry_day_before_expiry_in_days  # x days before the expiry
         last_n_iterations = self.config.last_n_iterations  # None depicts all
@@ -184,12 +194,17 @@ class BackTester:
         positions = defaultdict(list)
 
         for trade_day in days_of_trading:
+            # Following is divided by 1.4 to accomodate for 40% margin needed on expiry
+            # date. In-case the required margin exceeds available margin, it results into
+            # incurring charges and interest on top of it.
+            available_margin = self.config.available_margin / 1.4
+
             print('Processing for %s, expiry: %s' % (trade_day['on_date'], trade_day['expiry']))
 
-            instruments: List[EnrichedInstrumentModel] = InstrumentsController.enrich_instruments(instruments=stocks, on_date=trade_day['on_date'])
-            filtered_instruments = set([instrument.tickersymbol for instrument in  self.filter_instruments(instruments=instruments)])
-
             if filter_stocks_by_technicals:
+                instruments: List[EnrichedInstrumentModel] = InstrumentsController.enrich_instruments(instruments=stocks, on_date=trade_day['on_date'])
+                filtered_instruments = set([instrument.tickersymbol for instrument in  self.filter_instruments(instruments=instruments)])
+
                 filtered_stocks = [stock for stock in stocks if stock.tickersymbol in filtered_instruments]
 
                 LOGGER.info('Filtered %d stocks from %d' % (len(filtered_stocks), len(stocks)))
@@ -198,12 +213,18 @@ class BackTester:
 
             options = self._get_options(stocks=filtered_stocks, on_date=trade_day['on_date'])
 
+            if self.config.filter_options_by_open_int:
+                filter_function = lambda x: x.percentage_dip > self.config.filter_options_min_percentage_dip and x.percentage_dip < self.config.filter_options_max_percentage_dip \
+                    and x.open_int > self.config.filter_options_min_open_int \
+                    and x.profit > self.config.filter_options_min_profit and x.profit < self.config.filter_options_max_profit
+            else:
+                filter_function = lambda x: x.percentage_dip > self.config.filter_options_min_percentage_dip and x.percentage_dip < self.config.filter_options_max_percentage_dip \
+                    and x.profit > self.config.filter_options_min_profit and x.profit < self.config.filter_options_max_profit
+
             options = sorted(
                 list(
                     filter(
-                        lambda x: x.percentage_dip > 10 and x.percentage_dip < 16 \
-                            and x.open_int > 0 \
-                            and x.profit > 2000 and x.profit < 15000,
+                        filter_function,
                         options
                     )
                 ),
@@ -219,6 +240,10 @@ class BackTester:
                 if not option_list:
                     continue
 
+                if available_margin < 50000:
+                    # Margin < 50,000 INR doesn't get us anything, hence skipping
+                    break
+
                 selected_option: HistoricalOptionModel = list(option_list)[0]
                 expected_pnl = selected_option.close * selected_option.lot_size
 
@@ -226,6 +251,8 @@ class BackTester:
                     tickersymbol=selected_option.underlying_instrument,
                     on_date=trade_day['expiry']
                 )
+
+                available_margin -= selected_option.margin.total
 
                 if instrument_expiry.close >= selected_option.strike:
                     pnl = expected_pnl
@@ -287,6 +314,7 @@ class BackTester:
 class BluechipOptionsSeller:
     def __init__(self, backtesting_enabled: bool = False):
         self.backtesting_enabled = backtesting_enabled
+        self.config = None
 
     def get_config(self) -> ConfigModel:
         questions = [
@@ -347,10 +375,10 @@ class BluechipOptionsSeller:
 
         return from_dict(data_class=ConfigModel, data=config)
 
-    def _get_options(self, stocks: List[StockOfInterest]) -> List[EnrichedOptionModel]:
+    def _get_options(self) -> List[EnrichedOptionModel]:
         all_options = []
 
-        for stock in stocks:
+        for stock in self.config.stocks:
             instrument = InstrumentsController.get_instrument(tickersymbol=stock.tickersymbol)
             options = InstrumentsController.get_options_chain(instrument=instrument)
 
@@ -492,22 +520,11 @@ class BluechipOptionsSeller:
         for option in options:
             OptionsController.sell_option(option=option)
 
-    def run(self):
-        config = self.get_config()
-
-        LOGGER.info('Total profit expected till now: %d' % PositionsController.get_pnl_month_end())
-
-        if config.is_order_enabled:
-            PositionsController.cover_naked_positions()
-            GTTController.remove_naked_gtts(positions=PositionsController.get_positions())
-
-            if config.is_order_profit_booking_enabled:
-                OptionsController.exit_profited_options(profit_percentage_threshold=OPTIONS_EXIT_PROFIT_PERCENTAGE_THRESHOLD)
-
-        options = self._get_options(stocks=config.stocks)
+    def _manual_run(self):
+        options = self._get_options()
         trade_options = self._get_options_of_interest(options=options)
 
-        if config.is_order_enabled and options:
+        if self.config.is_order_enabled and options:
             self._trade_options(options=trade_options)
 
             to_continue_question = [{
@@ -526,3 +543,30 @@ class BluechipOptionsSeller:
                 self._trade_options(options=trade_options)
 
                 to_continue = prompt(questions=to_continue_question, style=STYLE)['continue']
+
+    def _automated_run(self):
+        # Workflow:
+        #   - Return on weekends
+        #   - Return if there is no available margin
+        #   - Filter stocks based on technicals
+        #   - Filter options based on filtered stocks
+        #   - Place an order based on the backtesting algorithm
+        options = self._get_options()
+
+    def run(self):
+        if not self.config:
+            self.config = self.get_config()
+
+        LOGGER.info('Total profit expected till now: %d' % PositionsController.get_pnl_month_end())
+
+        if self.config.is_order_enabled:
+            PositionsController.cover_naked_positions()
+            GTTController.remove_naked_gtts(positions=PositionsController.get_positions())
+
+            if self.config.is_order_profit_booking_enabled:
+                OptionsController.exit_profited_options(profit_percentage_threshold=OPTIONS_EXIT_PROFIT_PERCENTAGE_THRESHOLD)
+
+        if not self.config.is_automated:
+            self._manual_run()
+        else:
+            self._automated_run()

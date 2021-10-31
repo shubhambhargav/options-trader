@@ -35,6 +35,7 @@ OPTION_DATA_MAP = {
     'COALINDIA': { 'margin_backup_ratio': 1/6, 'lot_size': 4200 },
     'DRREDDY': { 'margin_backup_ratio': 1/9, 'lot_size': 125 },
     'HDFC': { 'margin_backup_ratio': 1/5.8, 'lot_size': 300 },
+    'HDFCAMC': { 'margin_backup_ratio': 1/5.8, 'lot_size': 200 },
     'HDFCBANK': { 'margin_backup_ratio': 1/9, 'lot_size': 550 },
     'HEROMOTOCO': { 'margin_backup_ratio': 1/7, 'lot_size': 300 },
     'HINDUNILVR': { 'margin_backup_ratio': 1/8.5, 'lot_size': 300 },
