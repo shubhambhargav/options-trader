@@ -641,10 +641,15 @@ class BluechipOptionsSeller:
 
         today = date.today()
 
-        # if today.weekday() in [5, 6]:
-        #     LOGGER.info('Not trading today as it is a weekend: %s' % today)
+        if today.weekday() in [5, 6]:
+            LOGGER.info('Not trading today as it is a weekend: %s' % today)
 
-        #     return
+            return
+
+        if today.day > 10:
+            LOGGER.info('Not trading after 10th day of the month, can we tweaked later...')
+
+            return
 
         # Following is divided by 1.4 to accomodate for 40% margin needed on expiry
         # date. In-case the required margin exceeds available margin, it results into
@@ -659,6 +664,7 @@ class BluechipOptionsSeller:
         self.config.stocks = self._filter_stocks() if self.config.automation_config.filter_stocks_by_technicals else self.config.stocks
 
         LOGGER.info('Short-listed %d stocks from %d' % (len(self.config.stocks), inital_stock_count))
+        LOGGER.info('Short-listed stocks: %s' % ', '.join([stock.tickersymbol for stock in self.config.stocks]))
 
         options = self._filter_automated_options()
 
@@ -668,11 +674,13 @@ class BluechipOptionsSeller:
 
             if available_margin < min_margin_required:
                 # Margin < 50,000 INR doesn't get us anything, hence skipping
+                LOGGER.info('Exhausted margin, remaining: %d' % available_margin)
+
                 break
 
             selected_option: EnrichedOptionModel = list(option_list)[0]
 
-            LOGGER.info('Selected option: %s' % selected_option.tradingsymbol)
+            LOGGER.info('Selected option: %s, percent_dip: %.2f, profit: %d' % (selected_option.tradingsymbol, selected_option.percentage_dip, selected_option.profit))
 
             OptionsController.sell_option(option=selected_option)
 
