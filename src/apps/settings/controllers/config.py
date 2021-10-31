@@ -92,6 +92,8 @@ class ConfigController:
         # TODO: Add mechanism to refresh the token
         kite_cookie_dict = get_cookie_dict(domain_name='kite.zerodha.com')
         tickertape_cookie_dict = get_cookie_dict(domain_name='tickertape.in')
+        tickertape_api_cookie_dict = get_cookie_dict(domain_name='api.tickertape.in')
+        sensibull_cookie_dict = get_cookie_dict(domain_name='sensibull.com')
 
         kite_enctoken = kite_cookie_dict.get('enctoken')
 
@@ -100,8 +102,9 @@ class ConfigController:
 
         config.update({
             'kite_auth_token': kite_enctoken,
+            'sensibull_access_token': sensibull_cookie_dict['access_token'],
             'tickertape_csrf_token': tickertape_cookie_dict['x-csrf-token-tickertape'],
-            'tickertape_jwt_token': tickertape_cookie_dict['jwt']
+            'tickertape_jwt_token': tickertape_api_cookie_dict['jwt']
         })
 
         ConfigController.CONFIG = from_dict(data_class=ConfigModel, data=config)

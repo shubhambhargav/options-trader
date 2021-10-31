@@ -29,7 +29,7 @@ STYLE = style_from_dict({
     Token.Question: '',
 })
 OPTIONS_MINIMUM_PROFIT_PERCENTAGE = 2  # in percentage
-OPTIONS_MAX_TIME_TO_EXPIRY = 40  # in days
+OPTIONS_MAX_TIME_TO_EXPIRY = 30  # in days
 OPTIONS_EXIT_PROFIT_PERCENTAGE_THRESHOLD = 90  # in percentage
 
 
@@ -216,7 +216,7 @@ class BackTester:
 
             if self.config.filter_options_by_open_int:
                 filter_function = lambda x: x.percentage_dip > self.config.filter_options_min_percentage_dip and x.percentage_dip < self.config.filter_options_max_percentage_dip \
-                    and x.open_int > self.config.filter_options_min_open_int \
+                    and x.oi > self.config.filter_options_min_open_int \
                     and x.profit > self.config.filter_options_min_profit and x.profit < self.config.filter_options_max_profit
             else:
                 filter_function = lambda x: x.percentage_dip > self.config.filter_options_min_percentage_dip and x.percentage_dip < self.config.filter_options_max_percentage_dip \
@@ -383,6 +383,10 @@ class BluechipOptionsSeller:
             instrument = InstrumentsController.get_instrument(tickersymbol=stock.tickersymbol)
             options = InstrumentsController.get_options_chain(instrument=instrument)
 
+            for option in options:
+                if '183' in option.tradingsymbol:
+                    print(option)
+
             options = list(filter(
                 # Only interested in
                 #   - PE options
@@ -545,16 +549,134 @@ class BluechipOptionsSeller:
 
                 to_continue = prompt(questions=to_continue_question, style=STYLE)['continue']
 
+    def _filter_stocks(self) -> List[StockOfInterest]:
+        instruments: List[EnrichedInstrumentModel] = InstrumentsController.enrich_instruments(instruments=self.config.stocks)
+
+        filtered_instruments = []
+
+        for instrument in instruments:
+            # Skip the instruments which:
+            #   - are already trading below last support because we don't know how low can they get
+            #   - have already reached the last resistance i.e. no expected room to grow
+            if instrument.close_last_by_resistance is None or instrument.close_last_by_support is None:
+                LOGGER.info(
+                    'Skipping instrument %s because insufficent data found: last support: %s, last resistance: %s' % (
+                        instrument.tickersymbol, instrument.close_last_by_support, instrument.close_last_by_resistance
+                    )
+                )
+
+                continue
+
+            if instrument.close_last_by_support < 0 or instrument.close_last_by_resistance > 0:
+                LOGGER.info(
+                    'Skipping instrument %s because of -ve support or +ve resistance from close: %.2f last support and %.2f last resistance' % (
+                        instrument.tickersymbol, instrument.close_last_by_support, instrument.close_last_by_resistance
+                    )
+                )
+
+                continue
+
+            support_resistance_gap = instrument.close_last_by_support + abs(instrument.close_last_by_resistance)
+
+            percentage_up_from_support = instrument.close_last_by_support / support_resistance_gap * 100
+
+            if percentage_up_from_support > self.config.automation_config.entry_point_from_last_support:
+                LOGGER.info(
+                    'Skipping instrument %s because stock has already moved by %d percent from last support' % (
+                        instrument.tickersymbol, percentage_up_from_support
+                    )
+                )
+
+                continue
+
+            filtered_instruments.append(instrument)
+
+        filtered_instruments = set([instrument.tickersymbol for instrument in  filtered_instruments])
+
+        filtered_stocks = [stock for stock in self.config.stocks if stock.tickersymbol in filtered_instruments]
+
+        return filtered_stocks
+
+    def _filter_automated_options(self) -> List[EnrichedOptionModel]:
+        options = self._get_options()
+
+        if self.config.automation_config.filter_options_by_open_int:
+            filter_function = lambda x: x.percentage_dip > self.config.automation_config.filter_options_min_percentage_dip and \
+                    x.percentage_dip < self.config.automation_config.filter_options_max_percentage_dip \
+                and x.oi > self.config.automation_config.filter_options_min_open_int \
+                and x.profit > self.config.automation_config.filter_options_min_profit and x.profit < self.config.automation_config.filter_options_max_profit
+        else:
+            filter_function = lambda x: x.percentage_dip > self.config.automation_config.filter_options_min_percentage_dip and \
+                    x.percentage_dip < self.config.automation_config.filter_options_max_percentage_dip \
+                and x.profit > self.config.automation_config.filter_options_min_profit and x.profit < self.config.automation_config.filter_options_max_profit
+
+        options = sorted(
+            list(
+                filter(
+                    filter_function,
+                    options
+                )
+            ),
+            key=lambda x: x.profit, reverse=True
+        )
+
+        grouped_options = defaultdict(list)
+
+        for option in options:
+            grouped_options[option.underlying_instrument].append(option)
+
+        return grouped_options
+
     def _automated_run(self):
         # Workflow:
-        #   - Return on weekends
-        #   - Return if there is no available margin
         #   - Filter stocks based on technicals
         #   - Filter options based on filtered stocks
         #   - Place an order based on the backtesting algorithm
         LOGGER.info('Config: %s' % self.config)
 
-        margin = UsersController.get_margins()
+        # TODO: Make the following connected with 1.4 ratio of total available margin
+        #       OR total available liquid margin
+        min_margin_required = 200000  # 1 lakhs
+        inital_stock_count = len(self.config.stocks)
+
+        today = date.today()
+
+        # if today.weekday() in [5, 6]:
+        #     LOGGER.info('Not trading today as it is a weekend: %s' % today)
+
+        #     return
+
+        # Following is divided by 1.4 to accomodate for 40% margin needed on expiry
+        # date. In-case the required margin exceeds available margin, it results into
+        # incurring charges and interest on top of it.
+        available_margin = UsersController.get_margins().equity.available.collateral / 1.4
+
+        if available_margin < min_margin_required:
+            LOGGER.info('Not trading due to margin ')
+
+            return
+
+        self.config.stocks = self._filter_stocks() if self.config.automation_config.filter_stocks_by_technicals else self.config.stocks
+
+        LOGGER.info('Short-listed %d stocks from %d' % (len(self.config.stocks), inital_stock_count))
+
+        options = self._filter_automated_options()
+
+        for _, option_list in options.items():
+            if not option_list:
+                continue
+
+            if available_margin < min_margin_required:
+                # Margin < 50,000 INR doesn't get us anything, hence skipping
+                break
+
+            selected_option: EnrichedOptionModel = list(option_list)[0]
+
+            LOGGER.info('Selected option: %s' % selected_option.tradingsymbol)
+
+            OptionsController.sell_option(option=selected_option)
+
+            available_margin = UsersController.get_margins().equity.available.collateral / 1.4
 
     def run(self):
         if not self.config:

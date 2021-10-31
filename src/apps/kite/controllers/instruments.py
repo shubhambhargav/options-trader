@@ -182,7 +182,10 @@ class InstrumentsController:
         weekly_option_instruments = set(['NIFTY'])
 
         response = requests.get(
-            'https://api.sensibull.com/v1/instruments/%s' % tickersymbol
+            'https://api.sensibull.com/v1/instruments/%s' % tickersymbol,
+            headers={
+                'Cookie': 'access_token=%s;' % ConfigController.get_config().sensibull_access_token
+            }
         )
 
         if response.status_code != 200:

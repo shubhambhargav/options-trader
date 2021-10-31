@@ -50,6 +50,7 @@ class HistoricalOptionModel:
     last_price: float = 0
     profit: float = 0
     lot_size: int = 0
+    oi: float = 0
     backup_money: float = 0
     margin: Optional[HistoricalOptionMarginModel] = field(default=None)
     time_to_expiry_in_days: int = 0
@@ -70,6 +71,7 @@ class HistoricalOptionModel:
         self.tickersymbol = self.symbol
         self.tradingsymbol = self.symbol
         self.last_price = self.close
+        self.oi = self.open_int
 
         if not OPTION_DATA_MAP.get(self.tickersymbol):
             raise ValueError('%s not configured for lot size in historical data' % self.tickersymbol)
