@@ -1,8 +1,10 @@
 from collections import defaultdict
 from datetime import date, timedelta
-from io import open_code
+from src.apps.kite.controllers.orders import OrdersController
 from src.apps.kite.controllers.users import UsersController
+from src.apps.kite.models.gtt import OrderModel
 from src.apps.kite.models.instruments import CandleModel, EnrichedInstrumentModel
+from src.apps.kite.models.positions import PositionModel
 from src.apps.nse.models.options import HistoricalOptionModel
 from typing import List
 
@@ -627,7 +629,7 @@ class BluechipOptionsSeller:
 
         return grouped_options
 
-    def _automated_run(self):
+    def _automated_run(self, positions: List[PositionModel], orders: List[OrderModel]):
         # Workflow:
         #   - Filter stocks based on technicals
         #   - Filter options based on filtered stocks
@@ -638,6 +640,12 @@ class BluechipOptionsSeller:
         #       OR total available liquid margin
         min_margin_required = 200000  # 1 lakhs
         inital_stock_count = len(self.config.stocks)
+
+        existing_instrument_options_positions = set([
+            position.tradingsymbol for position in positions
+        ] + [
+            order.tradingsymbol for order in orders
+        ])
 
         today = date.today()
 
@@ -661,9 +669,13 @@ class BluechipOptionsSeller:
 
             return
 
+        self.config.stocks = [stock for stock in self.config.stocks if stock.tickersymbol not in existing_instrument_options_positions]
+
+        LOGGER.info('Short-listed %d stocks from %d based on previous orders/positions' % (len(self.config.stocks), inital_stock_count))
+
         self.config.stocks = self._filter_stocks() if self.config.automation_config.filter_stocks_by_technicals else self.config.stocks
 
-        LOGGER.info('Short-listed %d stocks from %d' % (len(self.config.stocks), inital_stock_count))
+        LOGGER.info('Short-listed %d stocks from %d based on technicals' % (len(self.config.stocks), inital_stock_count))
         LOGGER.info('Short-listed stocks: %s' % ', '.join([stock.tickersymbol for stock in self.config.stocks]))
 
         options = self._filter_automated_options()
@@ -692,9 +704,14 @@ class BluechipOptionsSeller:
 
         LOGGER.info('Total profit expected till now: %d' % PositionsController.get_pnl_month_end())
 
+        # TODO: Filter out the active positions
+        positions = PositionsController.get_positions()
+        # TODO: Filter the active orders
+        orders = OrdersController.get_orders()
+
         if self.config.is_order_enabled:
             PositionsController.cover_naked_positions()
-            GTTController.remove_naked_gtts(positions=PositionsController.get_positions())
+            GTTController.remove_naked_gtts(positions=positions)
 
             if self.config.is_order_profit_booking_enabled:
                 OptionsController.exit_profited_options(profit_percentage_threshold=OPTIONS_EXIT_PROFIT_PERCENTAGE_THRESHOLD)
@@ -702,4 +719,4 @@ class BluechipOptionsSeller:
         if not self.config.is_automated:
             self._manual_run()
         else:
-            self._automated_run()
+            self._automated_run(positions=positions, orders=orders)

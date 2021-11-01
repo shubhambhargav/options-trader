@@ -67,7 +67,7 @@ class OptionsController:
         data = {
             'variety': 'regular',
             'exchange': 'NFO',
-            'tradingsymbol': option.name,
+            'tradingsymbol': option.tradingsymbol,
             'transaction_type': 'SELL',
             'order_type': 'LIMIT',
             'quantity': int(option.lot_size),
