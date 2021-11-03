@@ -35,6 +35,11 @@ class OrderModel:
     validity: str
     variety: str
     tags: List[str] = field(default=list)
+    is_open: bool = False
+
+    def __post_init__(self):
+        if self.status == 'OPEN':
+            self.is_open = True
 
 
 @dataclass

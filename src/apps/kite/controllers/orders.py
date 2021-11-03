@@ -12,7 +12,7 @@ from .users import UsersController
 
 class OrdersController:
     @staticmethod
-    def get_orders() -> List[OrderModel]:
+    def get_orders(filter_is_open: bool = False) -> List[OrderModel]:
         response = requests.get(
             'https://kite.zerodha.com/oms/orders',
             headers={
@@ -25,7 +25,12 @@ class OrdersController:
 
         orders = response.json()['data']
 
-        return [from_dict(data_class=OrderModel, data=order) for order in orders]
+        orders = [from_dict(data_class=OrderModel, data=order) for order in orders]
+
+        if filter_is_open:
+            orders = [order for order in orders if order.is_open]
+
+        return orders
 
     @staticmethod
     def place_order(order: PlaceOrderModel):

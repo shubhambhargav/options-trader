@@ -641,11 +641,15 @@ class BluechipOptionsSeller:
         min_margin_required = 200000  # 1 lakhs
         inital_stock_count = len(self.config.stocks)
 
-        existing_instrument_options_positions = set([
-            position.tradingsymbol for position in positions
-        ] + [
-            order.tradingsymbol for order in orders
-        ])
+        existing_instrument_options_positions = set()
+
+        for elem in positions + orders:
+            if not elem.tradingsymbol.endswith(('PE', 'CE')):
+                continue
+
+            instrument = Utilities.tradingsymbol_to_meta(tradingsymbol=elem.tradingsymbol)['instrument']
+
+            existing_instrument_options_positions.add(instrument)
 
         today = date.today()
 
@@ -707,7 +711,7 @@ class BluechipOptionsSeller:
         # TODO: Filter out the active positions
         positions = PositionsController.get_positions()
         # TODO: Filter the active orders
-        orders = OrdersController.get_orders()
+        orders = OrdersController.get_orders(filter_is_open=True)
 
         if self.config.is_order_enabled:
             PositionsController.cover_naked_positions()

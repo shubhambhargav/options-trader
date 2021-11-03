@@ -10,10 +10,10 @@ class AutomationConfig:
     filter_options_by_open_int: bool = True
     filter_options_min_percentage_dip: float = 10
     filter_options_max_percentage_dip: float = 16
-    filter_options_min_profit: float = 2000
+    filter_options_min_profit: float = 1000
     filter_options_max_profit: float = 15000
     filter_options_min_open_int: float = 0
-    entry_point_from_last_support: int = 50  # in percentage points
+    entry_point_from_last_support: int = 55  # in percentage points
 
 
 @dataclass
