@@ -12,6 +12,8 @@ import emoji
 from PyInquirer import Token, Separator, prompt, style_from_dict
 from dacite import from_dict
 
+from src.apps.telegram.controllers import TelegramController
+
 from .models import BackTestConfigModel, ConfigModel
 import src.utilities as Utilities
 from src.apps.kite.models import StockOfInterest, EnrichedOptionModel
@@ -683,6 +685,8 @@ class BluechipOptionsSeller:
         LOGGER.info('Short-listed stocks: %s' % ', '.join([stock.tickersymbol for stock in self.config.stocks]))
 
         options = self._filter_automated_options()
+        sold_options = []
+        total_options_selected = 0
 
         for _, option_list in options.items():
             if not option_list:
@@ -696,11 +700,25 @@ class BluechipOptionsSeller:
 
             selected_option: EnrichedOptionModel = list(option_list)[0]
 
+            total_options_selected += 1
+
             LOGGER.info('Selected option: %s, percent_dip: %.2f, profit: %d' % (selected_option.tradingsymbol, selected_option.percentage_dip, selected_option.profit))
 
-            OptionsController.sell_option(option=selected_option)
+            is_sucess = OptionsController.sell_option(option=selected_option)
 
-            available_margin = UsersController.get_margins().equity.available.collateral / 1.4
+            if is_sucess:
+                sold_options.append(selected_option)
+
+                available_margin = UsersController.get_margins().equity.available.collateral / 1.4
+
+        if sold_options:
+            telegram_message = 'Total options sold: %d out of selected: %d\n' % (len(sold_options), total_options_selected)
+
+            telegram_message += '\n'.join([
+                'Selected option: %s, percent_dip: %.2f, profit: %d' % (option.tradingsymbol, option.percentage_dip, option.profit) for option in sold_options
+            ])
+
+            TelegramController.send_message(message=telegram_message)
 
     def run(self):
         if not self.config:

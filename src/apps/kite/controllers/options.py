@@ -45,7 +45,7 @@ class OptionsController:
         return None
 
     @staticmethod
-    def sell_option(option: EnrichedOptionModel):
+    def sell_option(option: EnrichedOptionModel) -> bool:
         # Since the price of the option can change during the analysis,
         # following code ensures that we don't trade at a lower value than the last price
         if not isinstance(option, EnrichedOptionModel):
@@ -98,9 +98,11 @@ class OptionsController:
         if response.status_code == 200:
             LOGGER.info('Successfully placed the order for %s' % option.name)
 
-            return
+            return True
 
         LOGGER.error('Unexpected response code got from Kite while placing the order: %d, error: %s' % (response.status_code, response.text))
+
+        return False
 
     @staticmethod
     def get_option_margin_bulk(options: List[OptionModel]) -> List[OptionMarginModel]:
