@@ -106,8 +106,6 @@ class GTTController:
 
                 continue
 
-            print(gtt)
-
             GTTController.delete_gtt(gtt=gtt)
 
             LOGGER.info('Removed GTT for %s, price: %s because no corresponding position was found...' % (
