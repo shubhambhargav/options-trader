@@ -1,3 +1,4 @@
+import os
 import json
 import requests
 from dacite import from_dict
@@ -162,6 +163,11 @@ class ConfigController:
 
         config = {}
 
+        if os.path.exists(KITE_CONFIG_FILE):
+            local_config = json.loads(open(KITE_CONFIG_FILE, 'r').read())
+        else:
+            local_config = {}
+
         kite_cookie_dict = get_cookie_dict(domain_name='kite.zerodha.com')
         tickertape_cookie_dict = get_cookie_dict(domain_name='tickertape.in')
         tickertape_api_cookie_dict = get_cookie_dict(domain_name='api.tickertape.in')
@@ -180,7 +186,9 @@ class ConfigController:
             'kite_auth_token': kite_enctoken,
             'sensibull_access_token': 'free_user',
             'tickertape_csrf_token': tickertape_cookie_dict['x-csrf-token-tickertape'],
-            'tickertape_jwt_token': tickertape_api_cookie_dict['jwt']
+            'tickertape_jwt_token': tickertape_api_cookie_dict['jwt'],
+            'telegram_bot_token': local_config.get('telegram_bot_token', None),
+            'telegram_chat_id': local_config.get('telegram_chat_id', None)
         })
 
         ConfigController.CONFIG = from_dict(data_class=ConfigModel, data=config)
