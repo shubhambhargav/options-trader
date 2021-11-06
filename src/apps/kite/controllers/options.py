@@ -23,7 +23,6 @@ import src.utilities as Utilities
 from src.apps.settings.controllers import ConfigController
 from src.logger import LOGGER
 
-KITE_AUTH_TOKEN = ConfigController.get_config().kite_auth_token
 OPTIONS_SELLING_TARGET = -100  # in percentage i.e. recovering the entire put amount
 OPTIONS_SELLING_STOPLOSS = 250  # in percentage i.e. only holding till 250 % drop
 
@@ -86,7 +85,7 @@ class OptionsController:
 
         headers = {
             'content-type': 'application/x-www-form-urlencoded',
-            'Authorization': f'enctoken {KITE_AUTH_TOKEN}'
+            'Authorization': f'enctoken {ConfigController.get_config().kite_auth_token}'
         }
 
         response = requests.post(
@@ -129,7 +128,7 @@ class OptionsController:
                 'https://kite.zerodha.com/oms/margins/orders',
                 headers={
                     'Content-Type': 'application/json',
-                    'Authorization': f'enctoken {KITE_AUTH_TOKEN}'
+                    'Authorization': f'enctoken {ConfigController.get_config().kite_auth_token}'
                 },
                 data=json.dumps(chunk)
             )

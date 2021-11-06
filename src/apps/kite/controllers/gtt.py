@@ -12,14 +12,12 @@ import src.utilities as Utilities
 from src.apps.settings.controllers import ConfigController
 from src.logger import LOGGER
 
-KITE_AUTH_TOKEN = ConfigController.get_config().kite_auth_token
-
 
 class GTTController:
     @staticmethod
     def get_gtts(tickersymbol: str = None, filter_is_active: bool = True) -> List[GTTModel]:
         headers = {
-            'Authorization': f'enctoken {KITE_AUTH_TOKEN}'
+            'Authorization': f'enctoken {ConfigController.get_config().kite_auth_token}'
         }
 
         response = requests.get(
@@ -52,7 +50,7 @@ class GTTController:
 
         headers = {
             'content-type': 'application/x-www-form-urlencoded',
-            'Authorization': f'enctoken {KITE_AUTH_TOKEN}'
+            'Authorization': f'enctoken {ConfigController.get_config().kite_auth_token}'
         }
 
         gtt_payload = asdict(gtt)
@@ -75,7 +73,7 @@ class GTTController:
         response = requests.delete(
             'https://kite.zerodha.com/oms/gtt/triggers/%s' % gtt.id,
             headers={
-                'Authorization': f'enctoken {KITE_AUTH_TOKEN}'
+                'Authorization': f'enctoken {ConfigController.get_config().kite_auth_token}'
             }
         )
 

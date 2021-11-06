@@ -1,0 +1,57 @@
+{
+    "Version": "2012-10-17",
+    "Statement": [
+        {
+            "Sid": "BaseReadAccess",
+            "Effect": "Allow",
+            "Action": [
+                "lambda:List*",
+                "states:List*",
+                "s3:List*",
+                "cloudformation:Describe*",
+                "cloudformation:List*",
+                "cloudformation:Get*",
+                "cloudformation:ValidateTemplate",
+                "cloudformation:PreviewStackUpdate"
+            ],
+            "Resource": "*"
+        },
+        {
+            "Sid": "CloudformationAccess",
+            "Effect": "Allow",
+            "Action": [
+                "cloudformation:Describe*",
+                "cloudformation:Get*",
+                "cloudformation:CreateStack",
+                "cloudformation:UpdateStack"
+            ],
+            "Resource": "arn:aws:cloudformation:*:*:stack/algo-trader*"
+        },
+        {
+            "Sid": "S3DeploymentAccess",
+            "Effect": "Allow",
+            "Action": [
+                "s3:Get*",
+                "s3:Put*"
+            ],
+            "Resource": [
+                "arn:aws:s3:::algo-trader-meta",
+                "arn:aws:s3:::algo-trader-meta*"
+            ]
+        },
+        {
+            "Sid": "LambdaEditAccess",
+            "Effect": "Allow",
+            "Action": [
+                "lambda:PublishVersion",
+                "lambda:Get*",
+                "lambda:Update*",
+                "lambda:Delete*",
+                "lambda:Create*"
+            ],
+            "Resource": [
+                "arn:aws:lambda:us-east-1:*:function:*algo-trader_*"
+            ]
+        }
+    ]
+}

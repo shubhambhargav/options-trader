@@ -1,13 +1,9 @@
 import os
 import os.path
 import sys
-import time
-import glob
 import http.cookiejar
 import tempfile
-import lz4.block
 import datetime
-import configparser
 import base64
 from Crypto.Cipher import AES
 from typing import Union
@@ -403,186 +399,6 @@ class Chromium(ChromiumBased):
         }
         super().__init__(browser='Chromium', cookie_file=cookie_file, domain_name=domain_name, key_file=key_file, **args)
 
-class Opera(ChromiumBased):
-    """Class for Opera"""
-    def __init__(self, cookie_file=None, domain_name="", key_file=None):
-        args = {
-            'linux_cookies': ['~/.config/opera/Cookies'],
-            'windows_cookies':[
-                    {'env':'APPDATA', 'path':'..\\Local\\Opera Software\\Opera Stable\\Cookies'},
-                    {'env':'LOCALAPPDATA', 'path':'Opera Software\\Opera Stable\\Cookies'},
-                    {'env':'APPDATA', 'path':'Opera Software\\Opera Stable\\Cookies'}
-            ],
-            'osx_cookies': ['~/Library/Application Support/com.operasoftware.Opera/Cookies'],
-            'windows_keys': [
-                    {'env':'APPDATA', 'path':'..\\Local\\Opera Software\\Opera Stable\\Local State'},
-                    {'env':'LOCALAPPDATA', 'path':'Opera Software\\Opera Stable\\Local State'},
-                    {'env':'APPDATA', 'path':'Opera Software\\Opera Stable\\Local State'}
-            ],
-            'os_crypt_name':'chromium',
-            'osx_key_service' : 'Opera Safe Storage',
-            'osx_key_user' : 'Opera'
-        }
-
-        super().__init__(browser='Opera', cookie_file=cookie_file, domain_name=domain_name, key_file=key_file, **args)
-
-class Edge(ChromiumBased):
-    """Class for Microsoft Edge"""
-    def __init__(self, cookie_file=None, domain_name="", key_file=None):
-        args = {
-            'linux_cookies': [
-                '~/.config/microsoft-edge/Default/Cookies',
-                '~/.config/microsoft-edge-dev/Default/Cookies'
-            ],
-            'windows_cookies':[
-                    {'env':'APPDATA', 'path':'..\\Local\\Microsoft\\Edge\\User Data\\Default\\Cookies'},
-                    {'env':'LOCALAPPDATA', 'path':'Microsoft\\Edge\\User Data\\Default\\Cookies'},
-                    {'env':'APPDATA', 'path':'Microsoft\\Edge\\User Data\\Default\\Cookies'}
-            ],
-            'osx_cookies': ['~/Library/Application Support/Microsoft Edge/Default/Cookies'],
-            'windows_keys': [
-                    {'env':'APPDATA', 'path':'..\\Local\\Microsoft\\Edge\\User Data\\Local State'},
-                    {'env':'LOCALAPPDATA', 'path':'Microsoft\\Edge\\User Data\\Local State'},
-                    {'env':'APPDATA', 'path':'Microsoft\\Edge\\User Data\\Local State'}
-            ],
-            'os_crypt_name':'chromium',
-            'osx_key_service' : 'Microsoft Edge Safe Storage',
-            'osx_key_user' : 'Microsoft Edge'
-        }
-
-        super().__init__(browser='Edge', cookie_file=cookie_file, domain_name=domain_name, key_file=key_file, **args)
-
-class Firefox:
-    """Class for Firefox"""
-    def __init__(self, cookie_file=None, domain_name=""):
-        self.tmp_cookie_file = None
-        cookie_file = cookie_file or self.find_cookie_file()
-        self.tmp_cookie_file = create_local_copy(cookie_file)
-        # current sessions are saved in sessionstore.js
-        self.session_file = os.path.join(
-            os.path.dirname(cookie_file), 'sessionstore.js')
-        self.session_file_lz4 = os.path.join(os.path.dirname(
-            cookie_file), 'sessionstore-backups', 'recovery.jsonlz4')
-        # domain name to filter cookies by
-        self.domain_name = domain_name
-
-    def __del__(self):
-        # remove temporary backup of sqlite cookie database
-        if self.tmp_cookie_file:
-            os.remove(self.tmp_cookie_file)
-
-    def __str__(self):
-        return 'firefox'
-
-    @staticmethod
-    def get_default_profile(user_data_path):
-        config = configparser.ConfigParser()
-        profiles_ini_path = glob.glob(os.path.join(
-            user_data_path + '**', 'profiles.ini'))
-        fallback_path = user_data_path + '**'
-
-        if not profiles_ini_path:
-            return fallback_path
-
-        profiles_ini_path = profiles_ini_path[0]
-        config.read(profiles_ini_path)
-
-        profile_path = None
-        for section in config.sections():
-            if section.startswith('Install'):
-                profile_path = config[section].get('Default')
-                break
-            # in ff 72.0.1, if both an Install section and one with Default=1 are present, the former takes precedence
-            elif config[section].get('Default') == '1' and not profile_path:
-                profile_path = config[section].get('Path')
-
-        for section in config.sections():
-            # the Install section has no relative/absolute info, so check the profiles
-            if config[section].get('Path') == profile_path:
-                absolute = config[section].get('IsRelative') == '0'
-                return profile_path if absolute else os.path.join(os.path.dirname(profiles_ini_path), profile_path)
-
-        return fallback_path
-
-    @staticmethod
-    def find_cookie_file():
-        cookie_files = []
-
-        if sys.platform == 'darwin':
-            user_data_path = os.path.expanduser(
-                '~/Library/Application Support/Firefox')
-        elif sys.platform.startswith('linux'):
-            user_data_path = os.path.expanduser('~/.mozilla/firefox')
-        elif sys.platform == 'win32':
-            user_data_path = os.path.join(
-                os.environ.get('APPDATA'), 'Mozilla', 'Firefox')
-            # legacy firefox <68 fallback
-            cookie_files = glob.glob(os.path.join(os.environ.get('PROGRAMFILES'), 'Mozilla Firefox', 'profile', 'cookies.sqlite')) \
-                or glob.glob(os.path.join(os.environ.get('PROGRAMFILES(X86)'), 'Mozilla Firefox', 'profile', 'cookies.sqlite'))
-        else:
-            raise BrowserCookieError(
-                'Unsupported operating system: ' + sys.platform)
-
-        cookie_files = glob.glob(os.path.join(Firefox.get_default_profile(user_data_path), 'cookies.sqlite')) \
-            or cookie_files
-
-        if cookie_files:
-            return cookie_files[0]
-        else:
-            raise BrowserCookieError('Failed to find Firefox cookie')
-
-    @staticmethod
-    def __create_session_cookie(cookie_json):
-        expires = str(int(time.time()) + 3600 * 24 * 7)
-        return create_cookie(cookie_json.get('host', ''), cookie_json.get('path', ''), False, expires,
-                             cookie_json.get('name', ''), cookie_json.get('value', ''))
-
-    def __add_session_cookies(self, cj):
-        if not os.path.exists(self.session_file):
-            return
-        try:
-            json_data = json.loads(
-                open(self.session_file, 'rb').read().decode())
-        except ValueError as e:
-            LOGGER.error('Error parsing firefox session JSON:', str(e))
-        else:
-            for window in json_data.get('windows', []):
-                for cookie in window.get('cookies', []):
-                    if self.domain_name == '' or self.domain_name in cookie.get('host', ''):
-                        cj.set_cookie(Firefox.__create_session_cookie(cookie))
-
-    def __add_session_cookies_lz4(self, cj):
-        if not os.path.exists(self.session_file_lz4):
-            return
-        try:
-            file_obj = open(self.session_file_lz4, 'rb')
-            file_obj.read(8)
-            json_data = json.loads(lz4.block.decompress(file_obj.read()))
-        except ValueError as e:
-            LOGGER.error('Error parsing firefox session JSON LZ4:', str(e))
-        else:
-            for cookie in json_data.get('cookies', []):
-                if self.domain_name == '' or self.domain_name in cookie.get('host', ''):
-                    cj.set_cookie(Firefox.__create_session_cookie(cookie))
-
-    def load(self):
-        con = sqlite3.connect(self.tmp_cookie_file)
-        cur = con.cursor()
-        cur.execute('select host, path, isSecure, expiry, name, value from moz_cookies '
-                    'where host like "%{}%"'.format(self.domain_name))
-
-        cj = http.cookiejar.CookieJar()
-        for item in cur.fetchall():
-            c = create_cookie(*item)
-            cj.set_cookie(c)
-        con.close()
-
-        self.__add_session_cookies(cj)
-        self.__add_session_cookies_lz4(cj)
-
-        return cj
-
-
 def create_cookie(host, path, secure, expires, name, value):
     """Shortcut function to create a cookie"""
     return http.cookiejar.Cookie(0, name, value, None, False, host, host.startswith('.'), host.startswith('.'), path,
@@ -600,31 +416,13 @@ def chromium(cookie_file=None, domain_name="", key_file=None):
     """
     return Chromium(cookie_file, domain_name, key_file).load()
 
-def opera(cookie_file=None, domain_name="", key_file=None):
-    """Returns a cookiejar of the cookies used by Opera. Optionally pass in a
-    domain name to only load cookies from the specified domain
-    """
-    return Opera(cookie_file, domain_name, key_file).load()
-
-def edge(cookie_file=None, domain_name="", key_file=None):
-    """Returns a cookiejar of the cookies used by Microsoft Egde. Optionally pass in a
-    domain name to only load cookies from the specified domain
-    """
-    return Edge(cookie_file, domain_name, key_file).load()
-
-def firefox(cookie_file=None, domain_name=""):
-    """Returns a cookiejar of the cookies and sessions used by Firefox. Optionally
-    pass in a domain name to only load cookies from the specified domain
-    """
-    return Firefox(cookie_file, domain_name).load()
-
 
 def load(domain_name=""):
     """Try to load cookies from all supported browsers and return combined cookiejar
     Optionally pass in a domain name to only load cookies from the specified domain
     """
     cj = http.cookiejar.CookieJar()
-    for cookie_fn in [chrome, chromium, opera, edge, firefox]:
+    for cookie_fn in [chrome, chromium]:
         try:
             for cookie in cookie_fn(domain_name=domain_name):
                 cj.set_cookie(cookie)

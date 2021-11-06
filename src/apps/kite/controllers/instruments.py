@@ -20,8 +20,6 @@ from src.apps.settings.controllers import ConfigController
 from ..models import InstrumentModel, EnrichedInstrumentModel, CandleModel, OptionModel, StockOfInterest
 from .technicals import TechnicalIndicatorsController
 
-KITE_AUTH_TOKEN = ConfigController.get_config().kite_auth_token
-
 MARKET_HOLIDAY_ALTERNATES = {
     date(2021, 10, 15): date(2021, 10, 14)
 }
@@ -159,7 +157,7 @@ class InstrumentsController:
                 'to': to_date.strftime('%Y-%m-%d')
             },
             headers={
-                'Authorization': f'enctoken {KITE_AUTH_TOKEN}'
+                'Authorization': f'enctoken {ConfigController.get_config().kite_auth_token}'
             }
         )
 

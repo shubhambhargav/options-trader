@@ -1,0 +1,74 @@
+######
+# Service level definition. Here `analytics-integration` is a single service catering
+# to various ingestion processes via multiple lambdas
+######
+service:
+    name: algo-trader
+
+######
+# Plugins are specific to severless and are required for customisations across
+# serverless implementation for various use-cases
+# - serverless-python-requirements: Required for python packaging using Docker
+# - serverless-aws-alias: Required for aliasing serverless stacks across stages
+# - serverless-plugin-scripts: To hook onto hooks of serverless and define custom commands
+######
+plugins:
+  - serverless-python-requirements
+  - serverless-plugin-scripts
+package:
+    individually: true
+    exclude:
+        # Explicitly excluding everything here so that each function only
+        # gets the relevant content
+        - ./**
+
+######
+# Provider definition, which is AWS for everything that we do. This contains configuration
+# definition from an overall perspective. Most of the configurations here are overridable
+# within each function definition
+######
+provider:
+    name: aws
+    stage: ${opt:stage, "beta"} # Default stage
+    region: ${opt:region, "us-east-1"}
+    runtime: python3.8
+    logRetentionInDays: 7 # in days
+    deploymentBucket:
+        name: algo-trader-meta
+        serverSideEncryption: AES256
+    versionFunctions: true
+    tags:
+        resource-group: ${self:service.name}
+        resource-env: ${self:provider.stage}
+    # Note: following are the subnets and security groups for production VPC
+    # hence the deployment won't be successful on every stage
+    # TODO: Reference terraform resources as compared to hard-coding them
+    vpc:
+        securityGroupIds:
+            - sg-04dd052b7fdf7b02c
+        subnetIds:
+            - subnet-0939887dfb730b965
+            - subnet-05e81581d2d6e7ac4
+    role: arn:aws:iam::326543489242:role/${self:provider.stage}-options-trader-lambda-role
+
+######
+# All lambda functions definitions. Here we override certain configurations (if required)
+######
+functions:
+    options-trader:
+        handler: run.lambda_handler
+        name: ${self:provider.stage}-${self:service.name}_options-trader
+        # TODO: Reference terraform resources as compared to hard-coding them
+        role: arn:aws:iam::326543489242:role/${self:provider.stage}-options-trader-lambda-role
+        memorySize: 128  # in MBs
+        description: Trades options on a daily basis
+        timeout: 300  # in seconds
+        tags:
+            resource-name: options-trader
+        package:
+            include:
+                - src/**
+                - run.py
+                - requirements.txt
+        environment:
+            ENVIRONMENT: ${self:provider.stage}

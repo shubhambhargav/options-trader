@@ -13,3 +13,15 @@ profiler.txt
 # Local cache
 .trader-cache/
 .test-runs/
+
+# Terraform
+*.terraform*
+*.tfvars
+*.tfstate*
+
+# Node
+node_modules/
+package-lock.json
+
+# Serverless
+.serverless/

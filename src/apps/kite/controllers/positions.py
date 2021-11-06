@@ -14,8 +14,6 @@ import src.utilities as Utilities
 from src.apps.settings.controllers import ConfigController
 from src.logger import LOGGER
 
-KITE_AUTH_TOKEN = ConfigController.get_config().kite_auth_token
-
 
 class NakedPositionCover:
     @staticmethod
@@ -60,7 +58,7 @@ class PositionsController:
             'https://kite.zerodha.com/oms/portfolio/positions',
             headers={
                 'Content-Type': 'application/json',
-                'Authorization': f'enctoken {KITE_AUTH_TOKEN}'
+                'Authorization': f'enctoken {ConfigController.get_config().kite_auth_token}'
             }
         )
 
