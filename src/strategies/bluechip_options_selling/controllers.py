@@ -34,7 +34,7 @@ STYLE = style_from_dict({
 })
 OPTIONS_MINIMUM_PROFIT_PERCENTAGE = 2  # in percentage
 OPTIONS_MAX_TIME_TO_EXPIRY = 30  # in days
-OPTIONS_EXIT_PROFIT_PERCENTAGE_THRESHOLD = 90  # in percentage
+OPTIONS_EXIT_PROFIT_PERCENTAGE_THRESHOLD = 70  # in percentage
 
 
 class BackTester:
@@ -732,6 +732,8 @@ class BluechipOptionsSeller:
         orders = OrdersController.get_orders(filter_is_open=True)
 
         if self.config.is_order_enabled:
+            # TODO[Critical]: Capture the errors from cover nakes positions and send it to
+            #       Telegram for debugging
             PositionsController.cover_naked_positions()
             GTTController.remove_naked_gtts(positions=positions)
 

@@ -1,4 +1,3 @@
-from src.apps.kite.controllers.gtt import ConfigController.get_config().kite_auth_token
 import requests
 from typing import List, Optional
 

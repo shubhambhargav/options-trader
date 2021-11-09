@@ -7,6 +7,7 @@ emoji==1.4.2
 keyring==23.0.1
 matplotlib==3.4.3
 mplfinance==0.12.7a17
+numpy==1.21.2
 pandas==1.2.4
 pbkdf2==1.3
 pyaes==1.6.1

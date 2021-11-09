@@ -81,7 +81,7 @@ class PositionsController:
         positions = PositionsController.get_positions()
         gtts = GTTController.get_gtts()
 
-        uncovered_option_positions = []
+        uncovered_option_positions: List[PositionModel] = []
         gtt_tradingsymbol = set([elem.condition.tradingsymbol for elem in gtts])
 
         for position in sorted(positions, key=lambda x: x.tradingsymbol):
@@ -105,13 +105,16 @@ class PositionsController:
 
                 continue
 
-            NakedPositionCover.cover_option_sell(
-                position=option_position,
-                future_symbol=tradingsymbol,
-                option_meta=option_meta
-            )
+            try:
+                NakedPositionCover.cover_option_sell(
+                    position=option_position,
+                    future_symbol=tradingsymbol,
+                    option_meta=option_meta
+                )
 
-            LOGGER.info('Successfully placed a cover for option: %s...' % option_position.tradingsymbol)
+                LOGGER.info('Successfully placed a cover for option: %s...' % option_position.tradingsymbol)
+            except Exception as ex:
+                LOGGER.error('Failed to cover option: %s with error: %s' % (option_position.tradingsymbol, str(ex)))
 
     @staticmethod
     def exit_position(position: PositionModel):
