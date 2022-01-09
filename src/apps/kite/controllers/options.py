@@ -23,8 +23,8 @@ import src.utilities as Utilities
 from src.apps.settings.controllers import ConfigController
 from src.logger import LOGGER
 
-OPTIONS_SELLING_TARGET = -100  # in percentage i.e. recovering the entire put amount
-OPTIONS_SELLING_STOPLOSS = 250  # in percentage i.e. only holding till 250 % drop
+OPTIONS_SELLING_TARGET = -90  # in percentage i.e. recovering the entire put amount
+OPTIONS_SELLING_STOPLOSS = 150  # in percentage i.e. only holding till 250 % drop
 
 
 class OptionsController:
@@ -80,7 +80,7 @@ class OptionsController:
             'trailing_stoploss': '0',
             'user_id': UsersController.get_current_user().user_id,
             # Following has been disabled because the system adds a future at the next iteration of option buy
-            # 'gtt_params': '[[0,%s],[0,%s]]' % (OPTIONS_SELLING_TARGET, OPTIONS_SELLING_STOPLOSS)
+            'gtt_params': '[[0,%s],[0,%s]]' % (OPTIONS_SELLING_TARGET, OPTIONS_SELLING_STOPLOSS)
         }
 
         headers = {

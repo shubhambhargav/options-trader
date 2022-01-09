@@ -185,8 +185,8 @@ class ConfigController:
         config.update({
             'kite_auth_token': kite_enctoken,
             'sensibull_access_token': 'free_user',
-            'tickertape_csrf_token': tickertape_cookie_dict['x-csrf-token-tickertape'],
-            'tickertape_jwt_token': tickertape_api_cookie_dict['jwt'],
+            'tickertape_csrf_token': tickertape_cookie_dict.get('x-csrf-token-tickertape'),
+            'tickertape_jwt_token': tickertape_api_cookie_dict.get('jwt'),
             'telegram_bot_token': local_config.get('telegram_bot_token', None),
             'telegram_chat_id': local_config.get('telegram_chat_id', None)
         })

@@ -734,7 +734,8 @@ class BluechipOptionsSeller:
         if self.config.is_order_enabled:
             # TODO[Critical]: Capture the errors from cover nakes positions and send it to
             #       Telegram for debugging
-            PositionsController.cover_naked_positions()
+            # Note for the following: Not using the futures anymore
+            # PositionsController.cover_naked_positions()
             GTTController.remove_naked_gtts(positions=positions)
 
             if self.config.is_order_profit_booking_enabled:
