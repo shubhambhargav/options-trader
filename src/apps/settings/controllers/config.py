@@ -172,6 +172,8 @@ class ConfigController:
         tickertape_cookie_dict = get_cookie_dict(domain_name='tickertape.in')
         tickertape_api_cookie_dict = get_cookie_dict(domain_name='api.tickertape.in')
         sensibull_cookie_dict = get_cookie_dict(domain_name='sensibull.com')
+        zerodha_cookie_dict = get_cookie_dict(domain_name='zerodha.com')
+        console_cookie_dict = get_cookie_dict(domain_name='console.zerodha.com')
 
         kite_enctoken = kite_cookie_dict.get('enctoken')
         sensibull_access_token = sensibull_cookie_dict.get('access_token')
@@ -184,6 +186,8 @@ class ConfigController:
 
         config.update({
             'kite_auth_token': kite_enctoken,
+            'console_session': console_cookie_dict.get('session'),
+            'zerodha_x_csrf_token': zerodha_cookie_dict.get('public_token'),
             'sensibull_access_token': 'free_user',
             'tickertape_csrf_token': tickertape_cookie_dict.get('x-csrf-token-tickertape'),
             'tickertape_jwt_token': tickertape_api_cookie_dict.get('jwt'),
