@@ -20,7 +20,9 @@ class TradebookController:
         trades = []
 
         while state == STATE_PENDING or page <= total_pages:
-            url = 'https://console.zerodha.com/api/reports/tradebook?segment=%(segment)s&from_date=%(from_date)s&to_date=%(to_date)s&page=%(page)s&sort_by=order_execution_time&sort_desc=false' % {
+            # Context for tradingsymbol based sorting: In the order execution based sorting
+            # the pagination ends up skipping certain trades due to matching execution times
+            url = 'https://console.zerodha.com/api/reports/tradebook?segment=%(segment)s&from_date=%(from_date)s&to_date=%(to_date)s&page=%(page)s&sort_by=tradingsymbol&sort_desc=false' % {
                 'segment': segment,
                 'from_date': from_date.strftime(DATETIME_FORMAT),
                 'to_date': to_date.strftime(DATETIME_FORMAT),
@@ -34,7 +36,7 @@ class TradebookController:
             response = requests.get(url, headers=headers)
 
             if response.status_code != 200:
-                raise ValueError('Failed to get the tradebook details from Zerodha')
+                raise ValueError('Failed to get the tradebook details from Zerodha, err: %s' % response.text)
 
             resp_json = response.json()
             state = resp_json['data']['state']

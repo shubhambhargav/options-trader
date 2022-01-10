@@ -1,5 +1,10 @@
 from dataclasses import dataclass
-from typing import Union
+from datetime import date, datetime
+from typing import Optional, Union
+
+TRADE_TYPE_SELL = 'sell'
+TRADE_TYPE_BUY = 'buy'
+TRADE_DATE_FORMAT = '%Y-%m-%d'
 
 
 @dataclass
@@ -22,3 +27,8 @@ class Trade:
     trade_id: str
     trade_type: str
     tradingsymbol: str
+    # Computed variables
+    trade_date_dt: Optional[date]
+
+    def __post_init__(self):
+        self.trade_date_dt = datetime.strptime(self.trade_date, TRADE_DATE_FORMAT).date()

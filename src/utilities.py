@@ -1,5 +1,5 @@
 import collections
-from functools import reduce
+import math
 import re
 from datetime import date, datetime, timedelta
 from typing import Union
@@ -167,3 +167,15 @@ def deepgetattr(obj, attr):
         return val
 
     return deepgetattr(val, '.'.join(split_val[1:]))
+
+
+def calculate_cagr(buy_date: date, buy_price: Union[int, float], sell_date: date, sell_price: Union[int, float]):
+    days_diff = (sell_date - buy_date).days
+
+    if days_diff < 365:
+        cagr = (sell_price / buy_price - 1) * 365 / days_diff
+    else:
+        cagr = math.pow(sell_price / buy_price, 365 / days_diff) - 1
+
+    return cagr
+

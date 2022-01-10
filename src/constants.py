@@ -55,3 +55,8 @@ OPTION_DATA_MAP = {
     'TITAN': { 'margin_backup_ratio': 1/7, 'lot_size': 375 }
 }
 OPTION_DATA_MAP: Dict[str, OptionData] = dict((k, from_dict(data_class=OptionData, data=v)) for k, v in OPTION_DATA_MAP.items())
+
+# Old ticker to new ticker
+TICKER_CHANGE_MAP: Dict[str, str]  = {
+    'ADANIGREEN-BE': 'ADANIGREEN'
+}
