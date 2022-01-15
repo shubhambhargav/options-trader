@@ -700,6 +700,8 @@ class BluechipOptionsSeller:
 
             selected_option: EnrichedOptionModel = list(option_list)[0]
 
+            print(selected_option)
+
             total_options_selected += 1
 
             LOGGER.info('Selected option: %s, percent_dip: %.2f, profit: %d' % (selected_option.tradingsymbol, selected_option.percentage_dip, selected_option.profit))
