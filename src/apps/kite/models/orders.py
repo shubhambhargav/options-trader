@@ -3,6 +3,10 @@ from typing import List, Optional
 
 TRANSACTION_TYPE_BUY = 'BUY'
 TRANSACTION_TYPE_SELL = 'SELL'
+PRODUCT_CNC = 'CNC'
+PRODUCT_NRML = 'NRML'
+EXCHANGE_NFO = 'NFO'
+EXCHANGE_NSE = 'NSE'
 
 
 @dataclass
@@ -53,10 +57,10 @@ class PlaceOrderModel:
     price: float
     user_id: str = ''
     order_type: str = 'LIMIT'
-    product: str = 'NRML'
+    product: str = PRODUCT_NRML
     validity: str = 'DAY'
     variety: str = 'regular'
-    exchange: str = 'NFO'
+    exchange: str = EXCHANGE_NFO
     disclosed_quantity: int = 0
     trigger_price: float = 0
     squareoff: float = 0

@@ -4,7 +4,7 @@ from typing import List, Optional
 from dacite import from_dict
 
 import src.utilities as Utilities
-from src.apps.kite.models.orders import PlaceOrderModel, TRANSACTION_TYPE_SELL, TRANSACTION_TYPE_BUY
+from src.apps.kite.models.orders import EXCHANGE_NSE, PRODUCT_CNC, PlaceOrderModel, TRANSACTION_TYPE_SELL
 from src.apps.settings.controllers import ConfigController
 from src.apps.kite.controllers.orders import OrdersController
 from src.logger import LOGGER
@@ -42,10 +42,12 @@ class HoldingsController:
     @staticmethod
     def exit_holding(holding: HoldingModel):
         order = {
-                'tradingsymbol': holding.tradingsymbol,
+            'tradingsymbol': holding.tradingsymbol,
             'transaction_type': TRANSACTION_TYPE_SELL,
             'quantity': holding.quantity,
-            'price': Utilities.round_nearest(number=holding.last_price + 0.05, unit=0.05)
+            'price': Utilities.round_nearest(number=holding.last_price + 0.05, unit=0.05),
+            'product': PRODUCT_CNC,
+            'exchange': EXCHANGE_NSE
         }
 
         OrdersController.place_order(order=from_dict(data_class=PlaceOrderModel, data=order))
