@@ -3,7 +3,11 @@ from typing import List, Optional
 
 from dacite import from_dict
 
+import src.utilities as Utilities
+from src.apps.kite.models.orders import PlaceOrderModel, TRANSACTION_TYPE_SELL, TRANSACTION_TYPE_BUY
 from src.apps.settings.controllers import ConfigController
+from src.apps.kite.controllers.orders import OrdersController
+from src.logger import LOGGER
 
 from ..models import HoldingModel
 
@@ -34,3 +38,16 @@ class HoldingsController:
                 return holding
 
         return None
+
+    @staticmethod
+    def exit_holding(holding: HoldingModel):
+        order = {
+                'tradingsymbol': holding.tradingsymbol,
+            'transaction_type': TRANSACTION_TYPE_SELL,
+            'quantity': holding.quantity,
+            'price': Utilities.round_nearest(number=holding.last_price + 0.05, unit=0.05)
+        }
+
+        OrdersController.place_order(order=from_dict(data_class=PlaceOrderModel, data=order))
+
+        LOGGER.info('Successfully placed exit order for %s...' % holding.tradingsymbol)

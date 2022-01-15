@@ -1,7 +1,12 @@
 from typing import List
 
+from dacite import from_dict
+
+import src.utilities as Utilities
 from src.apps.kite.controllers.holdings import HoldingsController
+from src.apps.kite.controllers.orders import OrdersController
 from src.apps.kite.models.holdings import HoldingModel
+from src.apps.kite.models.orders import PlaceOrderModel, TRANSACTION_TYPE_BUY, TRANSACTION_TYPE_SELL
 from src.logger import LOGGER
 
 EXPECTED_TAX_BRACKET = 30  # in percentage
@@ -54,6 +59,15 @@ class TaxHarvestingController:
             return
 
         for holding in holdings_to_transact:
-            # TODO: Sell the existing holding
-            # TODO: Buy the new holding at the same price
-            pass
+            HoldingsController.exit_holding(holding=holding)
+
+            order = {
+                'tradingsymbol': holding.tradingsymbol,
+                'transaction_type': TRANSACTION_TYPE_BUY,
+                'quantity': holding.quantity,
+                'price': Utilities.round_nearest(number=holding.last_price - 0.05, unit=0.05)
+            }
+
+            OrdersController.place_order(order=from_dict(data_class=PlaceOrderModel, data=order))
+
+            LOGGER.info('Successfully placed entry order for %s...' % holding.tradingsymbol)

@@ -1,6 +1,9 @@
 from dataclasses import MISSING, dataclass, field
 from typing import List, Optional
 
+TRANSACTION_TYPE_BUY = 'BUY'
+TRANSACTION_TYPE_SELL = 'SELL'
+
 
 @dataclass
 class OrderModel:
@@ -59,4 +62,3 @@ class PlaceOrderModel:
     squareoff: float = 0
     stoploss: float = 0
     trailing_stoploss: float = 0
-
