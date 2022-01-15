@@ -12,7 +12,7 @@ from src.logger import LOGGER
 EXPECTED_TAX_BRACKET = 30  # in percentage
 
 
-class TaxHarvestingController:
+class TaxHarvester:
     @staticmethod
     def harvest_tax():
         holdings = HoldingsController.get_holdings()

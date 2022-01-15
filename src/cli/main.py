@@ -3,19 +3,22 @@ from PyInquirer import prompt
 from dacite.core import from_dict
 
 from src.logger import LOGGER
-from src.strategies import BluechipOptionsSeller, Strangler
+from src.strategies import BluechipOptionsSeller, Strangler, TaxHarvester
 from src.strategies.strangling.models import ConfigV2Model
 from src.strategies.bluechip_options_selling.models import (
     ConfigModel as BluechipOptionsSellingConfig,
     AutomationConfig as BluechipOptionsSellingAutomationConfig
 )
 
-REPR_BLUECHIP_OPTIONS_SELLER = 'bluechip_options_seller'
+REPR_BLUECHIP_OPTIONS_SELLER = 'Bluechip Options Seller'
+REPR_INDICES_DAILY_STRANGLER = 'Indices Daily Strangler'
+REPR_TAX_HARVESTER = 'Tax Harvester'
 
 # TODO: Build the following dynamically
 STARTEGY_MAP = {
-    'Bluechip Options Seller': BluechipOptionsSeller,
-    'Indices Daily Strangler': Strangler
+    REPR_BLUECHIP_OPTIONS_SELLER: BluechipOptionsSeller,
+    REPR_INDICES_DAILY_STRANGLER: Strangler,
+    REPR_TAX_HARVESTER: TaxHarvester
 }
 
 # TODO: Make the following option addition dynamic
@@ -66,19 +69,21 @@ def main(*args, **kwargs):
 
         return
 
-    if strategy_name not in ['Indices Daily Strangler', 'Bluechip Options Seller']:
-        raise ValueError('Unexpected strategy found, only Indices Daily Strangler is supported!')
+    if strategy_name not in STARTEGY_MAP.keys():
+        raise ValueError(
+            'Unexpected strategy found, only %s are supported!' % ','.join(STARTEGY_MAP.keys())
+        )
 
-    if strategy_name == 'Indices Daily Strangler':
-        strategy = STARTEGY_MAP[strategy_name]
+    if strategy_name == REPR_INDICES_DAILY_STRANGLER:
+        strategy: Strangler = STARTEGY_MAP[strategy_name]
 
         kwargs = dict((k, v) for k, v in kwargs.items() if v)
 
         config = from_dict(data_class=ConfigV2Model, data=kwargs)
 
         strategy(config=config).run()
-    elif strategy_name == 'Bluechip Options Seller':
-        strategy = STARTEGY_MAP[strategy_name]
+    elif strategy_name == REPR_BLUECHIP_OPTIONS_SELLER:
+        strategy: BluechipOptionsSeller = STARTEGY_MAP[strategy_name]
 
         kwargs = dict((k, v) for k, v in kwargs.items() if v)
         kwargs['stocks'] = [
@@ -90,5 +95,9 @@ def main(*args, **kwargs):
         config.automation_config = BluechipOptionsSellingAutomationConfig()
 
         strategy(config=config).run()
+    elif strategy_name == REPR_TAX_HARVESTER:
+        strategy: TaxHarvester = STARTEGY_MAP[strategy_name]
+
+        strategy.harvest_tax()
     else:
         raise ValueError('Unexpected strategy found: %s!' % strategy_name)
