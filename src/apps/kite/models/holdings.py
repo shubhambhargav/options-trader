@@ -1,5 +1,7 @@
 from dataclasses import dataclass
 
+from src.constants import ZerodhaEquityTransactionCharges
+
 
 @dataclass
 class HoldingModel:
@@ -25,3 +27,21 @@ class HoldingModel:
     t1_quantity: int
     tradingsymbol: str
     used_quantity: int
+
+    @property
+    def expected_transaction_charges(self):
+        buy_charges = self.average_price * self.quantity * (
+            ZerodhaEquityTransactionCharges.STT +
+            ZerodhaEquityTransactionCharges.TRANSACTION_CHARGES * (1 + ZerodhaEquityTransactionCharges.GST / 100) +
+            ZerodhaEquityTransactionCharges.SEBI +
+            ZerodhaEquityTransactionCharges.STAMP_CHARGES
+        ) / 100
+
+        sell_charges = self.last_price * self.quantity * (
+            ZerodhaEquityTransactionCharges.STT +
+            ZerodhaEquityTransactionCharges.TRANSACTION_CHARGES * (1 + ZerodhaEquityTransactionCharges.GST / 100) +
+            ZerodhaEquityTransactionCharges.SEBI
+        ) / 100
+
+        return buy_charges + sell_charges
+

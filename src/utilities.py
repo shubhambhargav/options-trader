@@ -178,4 +178,3 @@ def calculate_cagr(buy_date: date, buy_price: Union[int, float], sell_date: date
         cagr = math.pow(sell_price / buy_price, 365 / days_diff) - 1
 
     return cagr
-

@@ -5,6 +5,15 @@ from typing import Dict
 from dacite import from_dict
 
 
+class ZerodhaEquityTransactionCharges:
+    # All values are in percentage of the transaction
+    STT = 0.1
+    TRANSACTION_CHARGES = 0.00345
+    GST = 18
+    SEBI = 0.0001
+    STAMP_CHARGES = 0.015
+
+
 @dataclass
 class HolidayAlernateModel:
     option_expiry: date
