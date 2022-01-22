@@ -22,7 +22,7 @@ class TradebookController:
         while state == STATE_PENDING or page <= total_pages:
             # Context for tradingsymbol based sorting: In the order execution based sorting
             # the pagination ends up skipping certain trades due to matching execution times
-            url = 'https://console.zerodha.com/api/reports/tradebook?segment=%(segment)s&from_date=%(from_date)s&to_date=%(to_date)s&page=%(page)s&sort_by=tradingsymbol&sort_desc=false' % {
+            url = 'https://console.zerodha.com/api/reports/tradebook?segment=%(segment)s&from_date=%(from_date)s&to_date=%(to_date)s&page=%(page)s&sort_by=trade_id&sort_desc=false' % {
                 'segment': segment,
                 'from_date': from_date.strftime(DATETIME_FORMAT),
                 'to_date': to_date.strftime(DATETIME_FORMAT),

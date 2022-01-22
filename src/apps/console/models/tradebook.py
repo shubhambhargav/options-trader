@@ -5,6 +5,7 @@ from typing import Optional, Union
 TRADE_TYPE_SELL = 'sell'
 TRADE_TYPE_BUY = 'buy'
 TRADE_DATE_FORMAT = '%Y-%m-%d'
+STRINGIFIED_INTEGERS = tuple([str(elem) for elem in range(0, 10)])
 
 
 @dataclass
@@ -32,3 +33,11 @@ class Trade:
 
     def __post_init__(self):
         self.trade_date_dt = datetime.strptime(self.trade_date, TRADE_DATE_FORMAT).date()
+
+    @property
+    def is_gold_bond(self):
+        return True if self.tradingsymbol.startswith('SGB') else False
+
+    @property
+    def is_external_bond(self):
+        return True if self.tradingsymbol.startswith(STRINGIFIED_INTEGERS) else False

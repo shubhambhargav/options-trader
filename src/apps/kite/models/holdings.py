@@ -2,6 +2,8 @@ from dataclasses import dataclass
 
 from src.constants import ZerodhaEquityTransactionCharges
 
+STRINGIFIED_INTEGERS = tuple([str(elem) for elem in range(0, 10)])
+
 
 @dataclass
 class HoldingModel:
@@ -45,3 +47,10 @@ class HoldingModel:
 
         return buy_charges + sell_charges
 
+    @property
+    def is_gold_bond(self):
+        return True if self.tradingsymbol.startswith('SGB') else False
+
+    @property
+    def is_external_bond(self):
+        return True if self.tradingsymbol.startswith(STRINGIFIED_INTEGERS) else False

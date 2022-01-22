@@ -67,5 +67,6 @@ OPTION_DATA_MAP: Dict[str, OptionData] = dict((k, from_dict(data_class=OptionDat
 
 # Old ticker to new ticker
 TICKER_CHANGE_MAP: Dict[str, str]  = {
-    'ADANIGREEN-BE': 'ADANIGREEN'
+    'ADANIGREEN-BE': 'ADANIGREEN',
+    'ADANITRANS-BE': 'ADANITRANS'
 }
