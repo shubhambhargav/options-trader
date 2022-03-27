@@ -13,8 +13,8 @@ service:
 # - serverless-plugin-scripts: To hook onto hooks of serverless and define custom commands
 ######
 plugins:
-  - serverless-python-requirements
-  - serverless-plugin-scripts
+    - serverless-python-requirements
+    - serverless-plugin-scripts
 package:
     individually: true
     exclude:
@@ -51,12 +51,13 @@ provider:
             - subnet-05e81581d2d6e7ac4
     role: arn:aws:iam::326543489242:role/${self:provider.stage}-options-trader-lambda-role
 
-# Following customization is required to incorporate packages
-  # with binaries which do not get generated correctly, hence a
-  # base docker image is used (provided by serverless), to create
-  # such packages
-  pythonRequirements:
-    dockerizePip: non-linux
+custom:
+    # Following customization is required to incorporate packages
+    # with binaries which do not get generated correctly, hence a
+    # base docker image is used (provided by serverless), to create
+    # such packages
+    pythonRequirements:
+        dockerizePip: non-linux
 
 ######
 # All lambda functions definitions. Here we override certain configurations (if required)
