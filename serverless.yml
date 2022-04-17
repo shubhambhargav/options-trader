@@ -64,22 +64,6 @@ custom:
         dockerizePip: non-linux
         dockerSsh: true # To support private libraries installation
 
-# layers:
-#     pandas:
-#         name: ${self:provider.stage}-pandas-layer
-#         description: Pandas layer for lambda
-#         package:
-#             artifact: ./.requirements/pandas.zip
-#         compatibleRuntimes:
-#             - python3.8
-#     numpy:
-#         name: ${self:provider.stage}-numpy-layer
-#         description: Pandas layer for lambda
-#         package:
-#             artifact: ./.requirements/numpy.zip
-#         compatibleRuntimes:
-#             - python3.8
-
 ######
 # All lambda functions definitions. Here we override certain configurations (if required)
 ######
@@ -92,15 +76,14 @@ functions:
         memorySize: 128  # in MBs
         description: Trades options on a daily basis
         timeout: 300  # in seconds
-        # layers:
-        #     - { Ref: PandasLambdaLayer }
-        #     - { Ref: NumpyLambdaLayer }
         tags:
             resource-name: options-trader
         package:
             patterns:
                 - src/**
                 - run.py
+                - settings.py
                 - requirements.txt
         environment:
             ENVIRONMENT: ${self:provider.stage}
+            CACHE_TYPE: memory

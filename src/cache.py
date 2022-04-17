@@ -33,6 +33,9 @@ class Cache:
         self._cache_loc = f'{CACHE_FOLDER}/{func_name}.txt'
         self._memory = {}
 
+        if CACHE_TYPE != DISK_CACHE_TYPE:
+            return
+
         if not os.path.exists(CACHE_FOLDER):
             os.makedirs(CACHE_FOLDER)
 
