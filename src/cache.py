@@ -8,8 +8,10 @@ from dacite import from_dict
 
 from src.apps.nse.models.options import HistoricalOptionModel
 from src.apps.kite.models.instruments import CandleModel, EnrichedInstrumentModel, InstrumentModel
+from settings import CACHE_TYPE
 
 CACHE_FOLDER = './.trader-cache'
+DISK_CACHE_TYPE = 'disk'
 
 # Following is a patch due to the limitations of python getargspec with annotations
 FUNCTION_MODAL_MAP = {
@@ -40,6 +42,9 @@ class Cache:
         return self._memory
 
     def load(self):
+        if CACHE_TYPE != DISK_CACHE_TYPE:
+            return
+
         if not os.path.exists(self._cache_loc):
             return
 
@@ -47,6 +52,9 @@ class Cache:
             self._memory = json.loads(fileop.read())
 
     def dump(self):
+        if CACHE_TYPE != DISK_CACHE_TYPE:
+            return
+
         with open(self._cache_loc, 'w+') as fileop:
             fileop.write(json.dumps(self._memory))
 
