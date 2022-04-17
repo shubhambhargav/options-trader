@@ -2,8 +2,7 @@
 # Service level definition. Here `analytics-integration` is a single service catering
 # to various ingestion processes via multiple lambdas
 ######
-service:
-    name: algo-trader
+service: algo-trader
 
 ######
 # Plugins are specific to severless and are required for customisations across
@@ -13,14 +12,14 @@ service:
 # - serverless-plugin-scripts: To hook onto hooks of serverless and define custom commands
 ######
 plugins:
-    - serverless-python-requirements
-    - serverless-plugin-scripts
+  - serverless-python-requirements
+  - serverless-plugin-scripts
 package:
     individually: true
-    exclude:
+    patterns:
         # Explicitly excluding everything here so that each function only
         # gets the relevant content
-        - ./**
+        - '!./**'
 
 ######
 # Provider definition, which is AWS for everything that we do. This contains configuration
@@ -38,7 +37,7 @@ provider:
         serverSideEncryption: AES256
     versionFunctions: true
     tags:
-        resource-group: ${self:service.name}
+        resource-group: ${self:service}
         resource-env: ${self:provider.stage}
     # Note: following are the subnets and security groups for production VPC
     # hence the deployment won't be successful on every stage
@@ -49,7 +48,8 @@ provider:
         subnetIds:
             - subnet-0939887dfb730b965
             - subnet-05e81581d2d6e7ac4
-    role: arn:aws:iam::326543489242:role/${self:provider.stage}-options-trader-lambda-role
+    iam:
+        role: arn:aws:iam::326543489242:role/${self:provider.stage}-options-trader-lambda-role
 
 custom:
     # Following customization is required to incorporate packages
@@ -57,7 +57,28 @@ custom:
     # base docker image is used (provided by serverless), to create
     # such packages
     pythonRequirements:
+        # Following is being used to bypass the issues with pip 21.0 in the original image
+        # which causes a lot of issues with dependency resolution of modules, resulting in failure.
+        # The following image upgrades pip to latest i.e. 22.x to solve for the above issues.
+        dockerFile: ./Dockerfile
         dockerizePip: non-linux
+        dockerSsh: true # To support private libraries installation
+
+# layers:
+#     pandas:
+#         name: ${self:provider.stage}-pandas-layer
+#         description: Pandas layer for lambda
+#         package:
+#             artifact: ./.requirements/pandas.zip
+#         compatibleRuntimes:
+#             - python3.8
+#     numpy:
+#         name: ${self:provider.stage}-numpy-layer
+#         description: Pandas layer for lambda
+#         package:
+#             artifact: ./.requirements/numpy.zip
+#         compatibleRuntimes:
+#             - python3.8
 
 ######
 # All lambda functions definitions. Here we override certain configurations (if required)
@@ -65,16 +86,19 @@ custom:
 functions:
     options-trader:
         handler: run.lambda_handler
-        name: ${self:provider.stage}-${self:service.name}_options-trader
+        name: ${self:provider.stage}-${self:service}_options-trader
         # TODO: Reference terraform resources as compared to hard-coding them
         role: arn:aws:iam::326543489242:role/${self:provider.stage}-options-trader-lambda-role
         memorySize: 128  # in MBs
         description: Trades options on a daily basis
         timeout: 300  # in seconds
+        # layers:
+        #     - { Ref: PandasLambdaLayer }
+        #     - { Ref: NumpyLambdaLayer }
         tags:
             resource-name: options-trader
         package:
-            include:
+            patterns:
                 - src/**
                 - run.py
                 - requirements.txt

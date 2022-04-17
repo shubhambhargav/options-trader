@@ -71,3 +71,5 @@ class TaxHarvester:
             OrdersController.place_order(order=from_dict(data_class=PlaceOrderModel, data=order))
 
             LOGGER.info('Successfully placed entry order for %s...' % holding.tradingsymbol)
+
+            break

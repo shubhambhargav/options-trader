@@ -1,9 +1,12 @@
+autobahn[twisted,encryption,serialization,xbr]
 beautifulsoup4==4.10.0
 click==8.0.1
 dacite==1.6.0
 dataclasses-json==0.5.6
 emoji==1.4.2
 keyring==23.0.1
+matplotlib==3.4.3
+mplfinance==0.12.7a17
 numpy==1.21.2
 pandas==1.2.4
 pbkdf2==1.3

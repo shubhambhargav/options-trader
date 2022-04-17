@@ -2,7 +2,6 @@ from dataclasses import asdict
 import json
 from typing import List
 from datetime import date, datetime, timedelta
-from pandas.core.frame import DataFrame
 
 import requests
 import pandas as pd

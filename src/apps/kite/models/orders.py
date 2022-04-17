@@ -15,9 +15,9 @@ class OrderModel:
     cancelled_quantity: int
     disclosed_quantity: int
     exchange: str
-    exchange_order_id: str
-    exchange_timestamp: str
-    exchange_update_timestamp: str
+    exchange_order_id: Optional[str]
+    exchange_timestamp: Optional[str]
+    exchange_update_timestamp: Optional[str]
     filled_quantity: int
     guid: Optional[str]
     instrument_token: int

@@ -1,5 +1,6 @@
 from collections import defaultdict
 from datetime import date, timedelta
+from importlib.resources import is_resource
 from src.apps.kite.controllers.orders import OrdersController
 from src.apps.kite.controllers.users import UsersController
 from src.apps.kite.models.gtt import OrderModel
@@ -134,7 +135,7 @@ class BackTester:
             data={
                 'available_margin': 1400000,  # 14 lakhs
                 'entry_day_before_expiry_in_days': 25,
-                'last_n_iterations': 3,
+                'last_n_iterations': 7,
                 'filter_stocks_by_technicals': True,
                 'filter_options_by_open_int': True,
                 'entry_point_from_last_support': 50,
@@ -386,10 +387,6 @@ class BluechipOptionsSeller:
         for stock in self.config.stocks:
             instrument = InstrumentsController.get_instrument(tickersymbol=stock.tickersymbol)
             options = InstrumentsController.get_options_chain(instrument=instrument)
-
-            for option in options:
-                if '183' in option.tradingsymbol:
-                    print(option)
 
             options = list(filter(
                 # Only interested in
@@ -660,10 +657,10 @@ class BluechipOptionsSeller:
 
             return
 
-        if today.day > 10:
-            LOGGER.info('Not trading after 10th day of the month, can we tweaked later...')
+        # if today.day > 10:
+        #     LOGGER.info('Not trading after 10th day of the month, can we tweaked later...')
 
-            return
+        #     return
 
         # Following is divided by 1.4 to accomodate for 40% margin needed on expiry
         # date. In-case the required margin exceeds available margin, it results into
@@ -706,7 +703,8 @@ class BluechipOptionsSeller:
 
             LOGGER.info('Selected option: %s, percent_dip: %.2f, profit: %d' % (selected_option.tradingsymbol, selected_option.percentage_dip, selected_option.profit))
 
-            is_sucess = OptionsController.sell_option(option=selected_option)
+            # is_sucess = OptionsController.sell_option(option=selected_option)
+            is_sucess = True
 
             if is_sucess:
                 sold_options.append(selected_option)

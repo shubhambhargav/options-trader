@@ -25,3 +25,4 @@ package-lock.json
 
 # Serverless
 .serverless/
+.requirements/

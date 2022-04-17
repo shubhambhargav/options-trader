@@ -8,7 +8,6 @@ import numpy
 from PyInquirer import Token, prompt, style_from_dict
 from dacite.core import from_dict
 
-from src.apps.kite.connectors.websocket import KiteTicker
 from src.apps.kite.controllers.positions import PositionsController
 from src.apps.kite.controllers.instruments import InstrumentsController
 from src.apps.kite.controllers.options import OptionsController
@@ -93,7 +92,7 @@ def process_ticks(ticks: list) -> bool:
 
         return True
 
-def on_ticks(ws: KiteTicker, ticks):
+def on_ticks(ws, ticks):
     try:
         is_breaking_required = process_ticks(ticks=ticks)
     except Exception as ex:
@@ -265,6 +264,10 @@ class Strangler:
         return from_dict(data_class=ConfigV2Model, data=config)
 
     def run(self):
+        # In order to keep the requirements clean for deployments, the underlying twisted module is
+        # considered for development purposes only as of now, hence the following import is localized
+        from src.apps.kite.connectors.websocket import KiteTicker
+
         if not self.config:
             self.config = self.get_config()
 

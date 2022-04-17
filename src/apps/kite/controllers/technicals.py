@@ -2,9 +2,6 @@ from datetime import datetime, timedelta
 import numpy as np
 
 import pandas as pd
-import matplotlib.dates as mpl_dates
-import matplotlib.pyplot as plt
-from mplfinance.original_flavor import candlestick_ohlc
 
 TIMESTAMP_FORMAT = '%Y-%m-%d'
 
@@ -100,6 +97,11 @@ class TechnicalIndicatorsController:
                     levels.append((i, 1, l))
 
         def plot_all():
+            import matplotlib.pyplot as plt
+            import matplotlib.dates as mpl_dates
+
+            from mplfinance.original_flavor import candlestick_ohlc
+
             fig, ax = plt.subplots()
 
             new_df = df.copy()
