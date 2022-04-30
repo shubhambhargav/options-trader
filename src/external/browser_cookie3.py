@@ -5,7 +5,6 @@ import http.cookiejar
 import tempfile
 import datetime
 import base64
-from Crypto.Cipher import AES
 from typing import Union
 from src.logger import LOGGER
 
@@ -306,6 +305,7 @@ class ChromiumBased:
 
     def _decrypt(self, value, encrypted_value):
         """Decrypt encoded cookies"""
+        from Crypto.Cipher import AES
 
         if sys.platform == 'win32':
             try:
