@@ -102,6 +102,19 @@ class ConfigController:
         return True if response.status_code != 200 else False
 
     @staticmethod
+    def get_questrade_access_token(refresh_token: str):
+        response = requests.get(
+            'https://login.questrade.com/oauth2/token?grant_type=refresh_token&refresh_token=%(refresh_token)s' % {
+                'refresh_token': refresh_token
+            }
+        )
+
+        if response.status_code != 200:
+            raise ValueError('Unexpected response code from Questrade login API: %s' % response.status_code)
+
+        return response.json()
+
+    @staticmethod
     def refresh_sensibull_access_token():
         access_token = get_cookie_dict(domain_name='sensibull.com').get('access_token')
 
@@ -194,6 +207,16 @@ class ConfigController:
             else:
                 ref_config = {}
 
+            if ref_config.get('questrade_refresh_token'):
+                questrade_access_token = ConfigController.get_questrade_access_token(refresh_token=ref_config['questrade_refresh_token'])
+
+                ref_config['questrade_refresh_token'] = questrade_access_token['refresh_token']
+
+                with open(KITE_CONFIG_FILE, 'w+') as kite_config_file:
+                    kite_config_file.write(json.dumps(ref_config, indent=4))
+
+                ref_config['questrade_access_token'] = questrade_access_token['access_token']
+
             kite_cookie_dict = get_cookie_dict(domain_name='kite.zerodha.com')
             tickertape_cookie_dict = get_cookie_dict(domain_name='tickertape.in')
             tickertape_api_cookie_dict = get_cookie_dict(domain_name='api.tickertape.in')
@@ -220,7 +243,8 @@ class ConfigController:
                 'tickertape_csrf_token': tickertape_cookie_dict.get('x-csrf-token-tickertape'),
                 'tickertape_jwt_token': tickertape_api_cookie_dict.get('jwt'),
                 'telegram_bot_token': ref_config.get('telegram_bot_token', None),
-                'telegram_chat_id': ref_config.get('telegram_chat_id', None)
+                'telegram_chat_id': ref_config.get('telegram_chat_id', None),
+                'questrade_access_token': ref_config.get('questrade_access_token')
             })
 
         ConfigController.CONFIG = from_dict(data_class=ConfigModel, data=config)

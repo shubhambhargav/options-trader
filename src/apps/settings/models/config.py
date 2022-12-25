@@ -12,3 +12,4 @@ class ConfigModel:
     tickertape_jwt_token: Optional[str]
     telegram_bot_token: str
     telegram_chat_id: int
+    questrade_access_token: Optional[str]
