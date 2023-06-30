@@ -13,7 +13,7 @@ class SymbolsController:
     @staticmethod
     def get_symbol_candles(symbol_id: str, start: date, end: date, interval: str = 'OneDay') -> List[CandleModel]:
         response = requests.get(
-            'https://api06.iq.questrade.com/v1/markets/candles/%(symbol_id)s?startTime=%(start)s&endTime=%(end)s&interval=%(interval)s' % {
+            'https://api01.iq.questrade.com/v1/markets/candles/%(symbol_id)s?startTime=%(start)s&endTime=%(end)s&interval=%(interval)s' % {
                 'symbol_id': symbol_id,
                 'start': start.strftime('%Y-%m-%dT00:00:00-05:00'),
                 'end': end.strftime('%Y-%m-%dT00:00:00-05:00'),
@@ -42,7 +42,7 @@ class SymbolsController:
         values = ids if ids else names
 
         response = requests.get(
-            'https://api06.iq.questrade.com/v1/symbols?%(param)s=%(value)s' % {
+            'https://api01.iq.questrade.com/v1/symbols?%(param)s=%(value)s' % {
                 'param': 'ids' if ids else 'names',
                 'value': ','.join([str(val) for val in values])
             },
@@ -66,7 +66,7 @@ class SymbolsController:
         if not id and not name:
             raise ValueError('Either id or name must be provided')
 
-        url = 'https://api06.iq.questrade.com/v1/symbols/%s' % id if id else 'https://api06.iq.questrade.com/v1/symbols?names=%s' % name
+        url = 'https://api01.iq.questrade.com/v1/symbols/%s' % id if id else 'https://api01.iq.questrade.com/v1/symbols?names=%s' % name
 
         response = requests.get(
             url,

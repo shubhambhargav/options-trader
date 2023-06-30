@@ -13,7 +13,7 @@ class OptionsController:
     @staticmethod
     def get_option_quotes(ids: List[int], option_filters: List[OptionFilterModel] = []) -> List[OptionQuoteModel]:
         response = requests.post(
-            'https://api06.iq.questrade.com/v1/markets/quotes/options',
+            'https://api01.iq.questrade.com/v1/markets/quotes/options',
             data=json.dumps({
                 'filters': [option_filter.to_json() for option_filter in option_filters],
                 'optionIds': ids
@@ -37,7 +37,7 @@ class OptionsController:
     @staticmethod
     def get_options(symbol_id: int) -> List[OptionModel]:
         response = requests.get(
-            'https://api06.iq.questrade.com/v1/symbols/%s/options' % symbol_id,
+            'https://api01.iq.questrade.com/v1/symbols/%s/options' % symbol_id,
             headers={
                 'Authorization': f'Bearer {ConfigController.get_config().questrade_access_token}'
             }

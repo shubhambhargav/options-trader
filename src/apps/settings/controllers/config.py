@@ -217,35 +217,42 @@ class ConfigController:
 
                 ref_config['questrade_access_token'] = questrade_access_token['access_token']
 
-            kite_cookie_dict = get_cookie_dict(domain_name='kite.zerodha.com')
-            tickertape_cookie_dict = get_cookie_dict(domain_name='tickertape.in')
-            tickertape_api_cookie_dict = get_cookie_dict(domain_name='api.tickertape.in')
-            sensibull_cookie_dict = get_cookie_dict(domain_name='sensibull.com')
-            zerodha_cookie_dict = get_cookie_dict(domain_name='zerodha.com')
-            console_cookie_dict = get_cookie_dict(domain_name='console.zerodha.com')
+                config.update({
+                    'questrade_access_token': ref_config.get('questrade_access_token')
+                })
 
-            kite_enctoken = kite_cookie_dict.get('enctoken')
-            sensibull_access_token = sensibull_cookie_dict.get('access_token')
+            if ref_config.get('user_id'):
+                kite_cookie_dict = get_cookie_dict(domain_name='kite.zerodha.com')
+                tickertape_cookie_dict = get_cookie_dict(domain_name='tickertape.in')
+                tickertape_api_cookie_dict = get_cookie_dict(domain_name='api.tickertape.in')
+                sensibull_cookie_dict = get_cookie_dict(domain_name='sensibull.com')
+                zerodha_cookie_dict = get_cookie_dict(domain_name='zerodha.com')
+                console_cookie_dict = get_cookie_dict(domain_name='console.zerodha.com')
 
-            if ConfigController.is_kite_token_invalid(enctoken=kite_enctoken):
-                kite_enctoken = ConfigController.get_kite_enctoken(
-                    user_id=ref_config['user_id'], password=ref_config['password'], totp_key=ref_config['totp_key']
-                )
+                kite_enctoken = kite_cookie_dict.get('enctoken')
+                sensibull_access_token = sensibull_cookie_dict.get('access_token')
 
-            if ConfigController.is_sensibull_access_token_valid(access_token=sensibull_access_token):
-                sensibull_access_token = ConfigController.get_sensibull_access_token()
+                if ConfigController.is_kite_token_invalid(enctoken=kite_enctoken):
+                    kite_enctoken = ConfigController.get_kite_enctoken(
+                        user_id=ref_config['user_id'], password=ref_config['password'], totp_key=ref_config['totp_key']
+                    )
 
-            config.update({
-                'kite_auth_token': kite_enctoken,
-                'console_session': console_cookie_dict.get('session'),
-                'zerodha_x_csrf_token': zerodha_cookie_dict.get('public_token'),
-                'sensibull_access_token': 'free_user',
-                'tickertape_csrf_token': tickertape_cookie_dict.get('x-csrf-token-tickertape'),
-                'tickertape_jwt_token': tickertape_api_cookie_dict.get('jwt'),
-                'telegram_bot_token': ref_config.get('telegram_bot_token', None),
-                'telegram_chat_id': ref_config.get('telegram_chat_id', None),
-                'questrade_access_token': ref_config.get('questrade_access_token')
-            })
+                if ConfigController.is_sensibull_access_token_valid(access_token=sensibull_access_token):
+                    sensibull_access_token = ConfigController.get_sensibull_access_token()
+
+                config.update({
+                    'kite_auth_token': kite_enctoken,
+                    'console_session': console_cookie_dict.get('session'),
+                    'zerodha_x_csrf_token': zerodha_cookie_dict.get('public_token'),
+                    'sensibull_access_token': 'free_user',
+                    'tickertape_csrf_token': tickertape_cookie_dict.get('x-csrf-token-tickertape'),
+                    'tickertape_jwt_token': tickertape_api_cookie_dict.get('jwt')
+                })
+
+        config.update({
+            'telegram_bot_token': ref_config.get('telegram_bot_token', None),
+            'telegram_chat_id': ref_config.get('telegram_chat_id', None)
+        })
 
         ConfigController.CONFIG = from_dict(data_class=ConfigModel, data=config)
 
