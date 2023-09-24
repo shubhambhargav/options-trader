@@ -184,6 +184,11 @@ class ConfigController:
         return remote_config
 
     @staticmethod
+    def update_config(config: ConfigModel):
+        with open(KITE_CONFIG_FILE, 'w+') as fileop:
+            fileop.write(json.dumps(config.__dict__, indent=4))
+
+    @staticmethod
     def get_config() -> ConfigModel:
         if ConfigController.CONFIG:
             return ConfigController.CONFIG
@@ -208,18 +213,22 @@ class ConfigController:
                 ref_config = {}
 
             if ref_config.get('questrade_refresh_token'):
-                questrade_access_token = ConfigController.get_questrade_access_token(refresh_token=ref_config['questrade_refresh_token'])
-
-                ref_config['questrade_refresh_token'] = questrade_access_token['refresh_token']
-
-                with open(KITE_CONFIG_FILE, 'w+') as kite_config_file:
-                    kite_config_file.write(json.dumps(ref_config, indent=4))
-
-                ref_config['questrade_access_token'] = questrade_access_token['access_token']
-
                 config.update({
-                    'questrade_access_token': ref_config.get('questrade_access_token')
+                    'questrade_account_id': ref_config['questrade_account_id'],
+                    'questrade_refresh_token': ref_config['questrade_refresh_token']
                 })
+            #     questrade_access_token = ConfigController.get_questrade_access_token(refresh_token=ref_config['questrade_refresh_token'])
+
+            #     ref_config['questrade_refresh_token'] = questrade_access_token['refresh_token']
+
+            #     with open(KITE_CONFIG_FILE, 'w+') as kite_config_file:
+            #         kite_config_file.write(json.dumps(ref_config, indent=4))
+
+            #     ref_config['questrade_access_token'] = questrade_access_token['access_token']
+
+            #     config.update({
+            #         'questrade_access_token': ref_config.get('questrade_access_token')
+            #     })
 
             if ref_config.get('user_id'):
                 kite_cookie_dict = get_cookie_dict(domain_name='kite.zerodha.com')

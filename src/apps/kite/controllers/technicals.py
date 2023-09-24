@@ -31,7 +31,7 @@ class TechnicalIndicatorsController:
         return df
 
     @staticmethod
-    def get_buy_signal(df: pd.DataFrame) -> pd.DataFrame:
+    def get_buy_signal(df: pd.DataFrame, symbol_column_name: str = 'tickersymbol', timestamp_column_name: str = 'timestamp') -> pd.DataFrame:
         df['buy_signal'] = 0
 
         df.loc[
@@ -48,9 +48,9 @@ class TechnicalIndicatorsController:
             'buy_signal'
         ] = 2
 
-        agg_df = df[(df['buy_signal'] == 2) & (df['timestamp'] >= (datetime.now() - timedelta(days=30)).strftime(TIMESTAMP_FORMAT))] \
-            .groupby('tickersymbol') \
-            .agg(last_buy_signal=('timestamp', 'max')) \
+        agg_df = df[(df['buy_signal'] == 2) & (df[timestamp_column_name] >= (datetime.now() - timedelta(days=30)).strftime(TIMESTAMP_FORMAT))] \
+            .groupby(symbol_column_name) \
+            .agg(last_buy_signal=(timestamp_column_name, 'max')) \
             .reset_index()
 
         # Following ensures that day datetime string representation has limited information for sanity
@@ -60,7 +60,11 @@ class TechnicalIndicatorsController:
         return agg_df
 
     @staticmethod
-    def get_support_and_resistance(df: pd.DataFrame, low_column_name: str = 'low', high_column_name: str = 'high', is_print_enabled: bool = False):
+    def get_support_and_resistance(
+        df: pd.DataFrame, low_column_name: str = 'low', high_column_name: str = 'high',
+        timestamp_column_name: str = 'timestamp', timestamp_format: str = '%Y-%m-%dT%H:%M:%S+0530',
+        is_print_enabled: bool = False
+    ):
         # Ref: https://towardsdatascience.com/detection-of-price-support-and-resistance-levels-in-python-baedc44c34c9
         average_candle_size = np.mean(df[high_column_name] - df[low_column_name])
         levels = []
@@ -106,9 +110,9 @@ class TechnicalIndicatorsController:
 
             new_df = df.copy()
 
-            new_df['timestamp'] = pd.to_datetime(df['timestamp'], format='%Y-%m-%dT%H:%M:%S+0530')
+            new_df[timestamp_column_name] = pd.to_datetime(df[timestamp_column_name], format=timestamp_format)
 
-            new_df['timestamp'] = new_df['timestamp'].apply(mpl_dates.date2num)
+            new_df[timestamp_column_name] = new_df[timestamp_column_name].apply(mpl_dates.date2num)
 
             candlestick_ohlc(
                 ax, new_df.values, width=0.6, \
@@ -121,8 +125,8 @@ class TechnicalIndicatorsController:
 
             for level in levels:
                 plt.hlines(
-                    level[2], xmin=new_df['timestamp'][level[0]], \
-                    xmax=max(new_df['timestamp']), colors='blue'
+                    level[2], xmin=new_df[timestamp_column_name][level[0]], \
+                    xmax=max(new_df[timestamp_column_name]), colors='blue'
                 )
             fig.show()
 

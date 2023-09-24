@@ -1,5 +1,5 @@
 from datetime import datetime
-from typing import List
+from typing import List, Optional
 
 from dataclasses import dataclass
 
@@ -51,15 +51,15 @@ class OptionQuoteModel:
     underlyingId: int
     symbol: str
     symbolId: int
-    bidPrice: float
+    bidPrice: Optional[float]
     bidSize: int
-    askPrice: float
+    askPrice: Optional[float]
     askSize: int
-    lastTradePriceTrHrs: float
-    lastTradePrice: float
-    lastTradeSize: int
-    lastTradeTick: str
-    lastTradeTime: str
+    lastTradePriceTrHrs: Optional[float]
+    lastTradePrice: Optional[float]
+    lastTradeSize: Optional[int]
+    lastTradeTick: Optional[str]
+    lastTradeTime: Optional[str]
     volume: int
     openPrice: float
     highPrice: float

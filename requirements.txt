@@ -12,4 +12,5 @@ pyaes==1.6.1
 pycrypto==2.6.1
 PyInquirer==1.0.3
 python-telegram-bot==13.7
+questrade-api==1.0.3
 requests==2.25.1
