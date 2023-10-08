@@ -4,11 +4,13 @@ import json
 import boto3
 import requests
 from dacite import from_dict
+from dataclasses import asdict
 
 from src.external.chrome import get_cookie_dict
 
 from src.apps.settings.models import ConfigModel
 from src.external.pyotp.totp import TOTP
+from src.logger import LOGGER
 from settings import ENVIRONMENT, ENVIRONMENT_PRODUCTION
 
 KITE_CONFIG_FILE = './config.json'
@@ -186,7 +188,7 @@ class ConfigController:
     @staticmethod
     def update_config(config: ConfigModel):
         with open(KITE_CONFIG_FILE, 'w+') as fileop:
-            fileop.write(json.dumps(config.__dict__, indent=4))
+            fileop.write(json.dumps(asdict(config), indent=4))
 
     @staticmethod
     def get_config() -> ConfigModel:
@@ -216,6 +218,13 @@ class ConfigController:
                 config.update({
                     'questrade_account_id': ref_config['questrade_account_id'],
                     'questrade_refresh_token': ref_config['questrade_refresh_token']
+                })
+
+            if ref_config.get('google_sheet_config'):
+                config.update({
+                    'google_sheet_config': ref_config['google_sheet_config'],
+                    'google_sheet_name': ref_config['google_sheet_name'],
+                    'google_sheet_worksheet_id': ref_config['google_sheet_worksheet_id']
                 })
             #     questrade_access_token = ConfigController.get_questrade_access_token(refresh_token=ref_config['questrade_refresh_token'])
 

@@ -4,13 +4,17 @@ import re
 from datetime import datetime, date, timedelta
 from typing import List
 
+from src.apps.gsheets.controllers.symbols_list import SymbolsListController
 from src.apps.questrade.controllers.options import OptionsController
 from src.apps.questrade.controllers.symbols import SymbolsController
 from src.apps.questrade.controllers.accounts import AccountsController
+from src.apps.telegram.controllers import TelegramController
 
 from src.apps.questrade.models.symbols import SymbolModel
 from src.apps.questrade.models.accounts import AccountBalanceModel
 from src.apps.questrade.models.options import ChainPerStrikePriceModel
+from src.apps.gsheets.models.symbols import SymbolModel as SymbolListItemModel
+from src.apps.questrade.models.options import OptionQuoteModel
 
 from src.apps.settings.controllers import ConfigController
 from src.apps.questrade.client import QuestradeClient
@@ -27,9 +31,11 @@ OPTIONS_FILTER = {
     'maximum_price_drop_percentage': -20,  # to avoid making API call for non-traded options
     'minimum_return_percentage': 0.85,  # to ensure 10-12% return per year
     'minimum_credit_value': 120,  # in USD to ensure that each trade accounts for commissions and give at least 100 USD in returns
-    'maximum_last_price_change_percentage': 5
+    'maximum_last_price_change_percentage': 5,
+    'maximum_put_positions_for_underlying': 4
 }
 SYMBOLS_FILTER = {
+    'maximum_above_intrinsic_value': 30,  # Not investing in symbols which are more than 30% above the intrinsic value
     'maximum_entry_point_from_last_support': 30
 }
 ACCOUNT_FILTER = {
@@ -120,10 +126,29 @@ class OptionsSellerQuestrade:
 
         return filtered_options
 
-    def _get_filtered_symbols(self, symbols: List[SymbolModel]) -> List[SymbolModel]:
-        enriched_symbols = SymbolsController.enrich_symbols(symbols=symbols)
+    def _get_filtered_symbols(self, symbols_list: List[SymbolListItemModel]) -> List[SymbolModel]:
+        filtered_symbols_list = []
+
+        for symbol in symbols_list:
+            if not symbol.is_active:
+                LOGGER.info(f'Skipping symbol {symbol.symbol} because it is not active')
+
+                continue
+
+            if symbol.percentage > SYMBOLS_FILTER['maximum_above_intrinsic_value']:
+                LOGGER.info(f'Skipping symbol {symbol.symbol} because it is too much above intrinsic value, expected {SYMBOLS_FILTER["maximum_above_intrinsic_value"]}, found: {symbol.percentage}')
+
+                continue
+
+            filtered_symbols_list.append(symbol)
+
+        LOGGER.info(f'Retrieved {len(filtered_symbols_list)} symbols to process')
+
+        symbols = self._get_symbols(symbols_list=filtered_symbols_list)
 
         filtered_enriched_symbols = []
+
+        enriched_symbols = SymbolsController.enrich_symbols(symbols=symbols)
 
         for symbol in enriched_symbols:
             # Skip the symbols which:
@@ -170,11 +195,11 @@ class OptionsSellerQuestrade:
 
         return filtered_symbols
 
-    def _get_symbols(self, symbol_names: List[str]) -> List[SymbolModel]:
+    def _get_symbols(self, symbols_list: List[SymbolListItemModel]) -> List[SymbolModel]:
         symbols = []
 
-        for symbol_name in symbol_names:
-            symbol_base = SymbolsController.find_symbol(name=symbol_name)
+        for symbol_list_item in symbols_list:
+            symbol_base = SymbolsController.find_symbol(name=symbol_list_item.symbol)
             symbol = SymbolsController.get_symbol(id=symbol_base.symbolId)
 
             symbols.append(symbol)
@@ -191,13 +216,26 @@ class OptionsSellerQuestrade:
 
         return usd_balance.maintenanceExcess
 
-    def _filter_existing_positions(self, options):
+    def _filter_existing_positions(self, options: List[OptionQuoteModel]):
         account_id = ConfigController.get_config().questrade_account_id
 
         positions = AccountsController.get_positions(account_id=account_id)
         orders = AccountsController.get_orders(account_id=account_id)
 
         positions_set = set([position.symbol for position in positions] + [order.symbol for order in orders])
+
+        underlying_option_count = {}
+
+        for position_symbol in positions_set:
+            parsed_symbol = parse_option_symbol(symbol=position_symbol)
+
+            if not parsed_symbol:
+                continue
+
+            if underlying_option_count.get(parsed_symbol['symbol']):
+                underlying_option_count[parsed_symbol['symbol']] += 1
+            else:
+                underlying_option_count[parsed_symbol['symbol']] = 1
 
         filtered_options = []
 
@@ -207,25 +245,73 @@ class OptionsSellerQuestrade:
 
                 continue
 
+            parsed_option_symbol = parse_option_symbol(symbol=option.symbol)['symbol']
+
+            if underlying_option_count.get(parsed_option_symbol) >= OPTIONS_FILTER['maximum_put_positions_for_underlying']:
+                LOGGER.info(f'Skipping recommending option {option.symbol} because there are already {underlying_option_count.get(parsed_option_symbol)} positions/orders for the underlying')
+
+                continue
+
             filtered_options.append(option)
 
         return filtered_options
 
+    def _filter_based_on_margin(self, margin: float, options: List[OptionQuoteModel], symbols_list: List[SymbolListItemModel]) -> List[OptionQuoteModel]:
+        symbols_dict = dict((symbol.symbol, symbol) for symbol in symbols_list)
+
+        filtered_options = []
+
+        for option in options:
+            parsed_option_symbol = parse_option_symbol(symbol=option.symbol)
+
+            symbol = symbols_dict[parsed_option_symbol['symbol']]
+            margin_required = symbol.long_mr * float(parsed_option_symbol['strike_price']) * OPTIONS_MULTIPLIER / 100
+
+            margin -= margin_required
+
+            if margin < ACCOUNT_FILTER['minimum_buying_power']:
+                message = f'Skipping the recommendation {option.symbol} because the updated margin {margin} is below the minimum margin {ACCOUNT_FILTER["minimum_buying_power"]}'
+
+                LOGGER.info(message)
+
+                TelegramController.send_message(message=message)
+
+                break
+
+            filtered_options.append(option)
+
+        return filtered_options
+
+    def _construct_message(self, options: List[OptionQuoteModel]) -> str:
+        message = 'Option\tProfit\n'
+
+        for option in options:
+            message += f'{option.symbol}\t{option.lastTradePrice * OPTIONS_MULTIPLIER}\n'
+
+        return message
+
     def run(self):
         # TODO
         # Add the following filters:
-        # 1. Stock filter based on fundamental value
+        # 1. [Done] Stock filter based on fundamental value
         # 2. [Done] Stock filter based on last support and resistance
         # 3. [Done] Filter based on already existing positions
-        # 4. Filter based on margin available or margin required
-        symbol_names = ['AAPL', 'AMD', 'COIN', 'TGT', 'DIS', 'PYPL', 'TEAM', 'GOOG', 'META']
+        # 4. [Done] Filter based on margin available or margin required
+        # 4.1 Start running the engine on the server
+        # 5. Add awareness of earnings / dividends date
+        # 6. Create an enriched option with all the information to be printed / sent / stored
+        # 7. Figure out a way to create link for Questrade account single click trade
         options_of_interest = []
 
         try:
             buying_power = self._get_available_buying_power()
 
             if buying_power < ACCOUNT_FILTER['minimum_buying_power']:
-                LOGGER.info(f'Not recommending since the buying power is less than required. Found: {buying_power}, required: {ACCOUNT_FILTER["minimum_buying_power"]}')
+                message = f'Not recommending since the buying power is less than required. Found: {buying_power}, required: {ACCOUNT_FILTER["minimum_buying_power"]}'
+
+                TelegramController.send_message(message=message)
+
+                LOGGER.info(message)
 
                 Q.destroy()
 
@@ -233,11 +319,10 @@ class OptionsSellerQuestrade:
 
             LOGGER.info(f'options_selling_questrade~run: Available buying power: {buying_power}')
 
-            symbols = self._get_symbols(symbol_names=symbol_names)
+            symbols_list = SymbolsListController.get_symbols_list()
+            filtered_symbols = self._get_filtered_symbols(symbols_list=symbols_list)
 
-            filtered_symbols = self._get_filtered_symbols(symbols=symbols)
-
-            LOGGER.info(f'Filtered symbol count: {len(filtered_symbols)}')
+            LOGGER.info(f'options_selling_questrade~run: Filtered symbol count: {len(filtered_symbols)}')
 
             for symbol in filtered_symbols:
                 filtered_options = self._get_filtered_options(symbol=symbol)
@@ -247,9 +332,15 @@ class OptionsSellerQuestrade:
 
             options_of_interest = self._filter_existing_positions(options=options_of_interest)
 
-            LOGGER.info(options_of_interest)
+            # TODO: Figure out the right sorting for the options
+            options_of_interest = self._filter_based_on_margin(margin=buying_power, options=options_of_interest, symbols_list=symbols_list)
+
             # TODO: Print options of interest in human readable fashion
             LOGGER.info(f'Filtered the option count to: {len(options_of_interest)}')
+
+            message = self._construct_message(options=options_of_interest)
+
+            TelegramController.send_message(message=message)
         except Exception as ex:
             traceback.print_exc()
 

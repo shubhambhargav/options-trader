@@ -24,7 +24,9 @@ class AccountsController:
     def get_positions(account_id: str) -> List[PositionModel]:
         positions = []
 
-        for position in Q.account_positions(id=account_id)['positions']:
+        positions_resopnse = Q.account_positions(id=account_id)['positions']
+
+        for position in positions_resopnse:
             positions.append(from_dict(data_class=PositionModel, data=position))
 
         return positions
